@@ -33,3 +33,5 @@ src/ircd
 src/version.c.last
 tools/convert_conf
 tools/mkpasswd
+run
+make-cert.sh

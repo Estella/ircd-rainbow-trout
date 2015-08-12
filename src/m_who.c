@@ -693,9 +693,6 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
     char status[4];
 
     /* drop nonlocal clients */
-    if(!MyClient(sptr))
-	return 0;
-    
     if(!build_searchopts(sptr, parc-1, parv+1))
 	return 0; /* /who was no good */
     
