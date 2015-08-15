@@ -635,6 +635,55 @@ void sendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
     return;
 }
 
+void sendto_channel_butone_local(aClient *one, aClient *from, aChannel *chptr,
+                           char *pattern, ...) 
+{
+    chanMember *cm;
+    aClient *acptr;
+    int i;
+    int didlocal = 0, didremote = 0;
+    va_list vl;
+    char *pfix;
+    void *share_bufs[2] = { 0, 0 };
+   
+    va_start(vl, pattern);
+
+    pfix = va_arg(vl, char *);
+
+    INC_SERIAL
+    for (cm = chptr->members; cm; cm = cm->next) 
+    {
+        acptr = cm->cptr;
+        if (acptr->from == one)
+            continue; /* ...was the one I should skip */
+
+        if((confopts & FLAGS_SERVHUB) && IsULine(acptr) && (acptr->uplink->serv->uflags & ULF_NOCHANMSG))
+            continue; /* Don't send channel traffic to super servers */
+
+        i = acptr->from->fd;
+        if (MyClient(acptr)) 
+        {
+            if(!didlocal)
+            {
+                didlocal = prefix_buffer(0, from, pfix, sendbuf, 
+                                         pattern, vl);
+                sbuf_begin_share(sendbuf, didlocal, &share_bufs[0]);
+            }
+            if(check_fake_direction(from, acptr))
+                    continue;
+            
+            send_message(acptr, sendbuf, didlocal, share_bufs[0]);
+            sentalong[i] = sent_serial;
+        }
+        else 
+            continue;
+    }
+    
+    sbuf_end_share(share_bufs, 2);    
+    va_end(vl);
+    return;
+}
+
 /*
  * Like sendto_channel_butone, but sends to all servers but 'one'
  * that have clients in this channel.
@@ -888,6 +937,69 @@ void sendto_common_channels(aClient *from, char *pattern, ...)
                 cptr = users->cptr;
         
                 if (!MyConnect(cptr) || sentalong[cptr->fd] == sent_serial)
+                        continue;
+
+                if((channels->value.chptr->mode.mode & MODE_AUDITORIUM) && (cptr != from) &&
+                   !is_chan_opvoice(cptr, channels->value.chptr) && !is_chan_opvoice(from, channels->value.chptr)) continue;
+            
+                sentalong[cptr->fd] = sent_serial;
+                if (!msglen)
+                {
+                    msglen = prefix_buffer(0, from, pfix, sendbuf,
+                                           pattern, vl);
+                    sbuf_begin_share(sendbuf, msglen, &share_buf);
+                }
+                if (check_fake_direction(from, cptr))
+                    continue;
+                send_message(cptr, sendbuf, msglen, share_buf);
+            }
+        }
+    }
+    
+    if(MyConnect(from))
+    {
+        if(!msglen)
+            msglen = prefix_buffer(0, from, pfix, sendbuf, pattern, vl);
+        /* send the share buf if others are using it too */
+        send_message(from, sendbuf, msglen, share_buf);
+    }
+    
+    sbuf_end_share(&share_buf, 1);
+
+    va_end(vl);
+    return;
+}
+
+void sendto_common_channels_butfrom(aClient *from, char *pattern, ...)
+{
+    Link *channels;
+    chanMember *users;
+    aClient *cptr;
+    va_list vl;
+    char *pfix;
+    int msglen = 0;
+    void *share_buf = NULL;
+
+    va_start(vl, pattern);
+
+    pfix = va_arg(vl, char *);
+
+    INC_SERIAL
+
+    if(from->fd >= 0)
+        sentalong[from->fd] = sent_serial;
+    
+    if (from->user)
+    {
+        for (channels = from->user->channel; channels; 
+             channels = channels->next)
+        {
+            for (users = channels->value.chptr->members; users; 
+                 users = users->next) 
+            {
+                cptr = users->cptr;
+        
+                if (!MyConnect(cptr) || sentalong[cptr->fd] == sent_serial || cptr == from)
                         continue;
 
                 if((channels->value.chptr->mode.mode & MODE_AUDITORIUM) && (cptr != from) &&

@@ -39,6 +39,48 @@ extern int user_modes[];
 int svspanic = 0; /* Services panic */
 int svsnoop = 0; /* Services disabled all o:lines (off by default) */
 
+void
+hostchange_qjm (aClient *cptr, char *oldhost)
+{
+    // Basically a "verbatim" rewrite of Charybdis' change_nick_user_host.
+    // To be called AFTER the host is set.
+    Link *clink;
+    char mode[10], modeval[NICKLEN * 8 + 9];
+    char *mb = mode, *mvb = modeval;
+
+    sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", cptr->name, cptr->user->username, oldhost, cptr->user->hostname);
+
+    for (clink = cptr->user->channel, clink, clink = clink->next) {
+        sendto_channel_butone_local(cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->hostname, clink->value.chptr->name);
+        if (is_chan_superop(cptr, clink->value.chptr)) {
+            *mb = 'a';
+            strcat(mvb, cptr->name);
+            strcat(mvb, " ");
+        }
+
+        if (is_chan_op(cptr, clink->value.chptr)) {
+            *mb++ = 'o';
+            strcat(mvb, cptr->name);
+            strcat(mvb, " ");
+        }
+
+        if (is_chan_halfop(cptr, clink->value.chptr)) {
+            *mb++ = 'h';
+            strcat(mvb, cptr->name);
+            strcat(mvb, " ");
+        }
+
+        if (is_chan_voice(cptr, clink->value.chptr)) {
+            *mb++ = 'v';
+            strcat(mvb, cptr->name);
+            strcat(mvb, " ");
+        }
+
+        mb = mode;
+        sendto_channel_butone_local(cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->hostname, clink->value.chptr->name, mb, mvb);
+    }
+}
+
 /*
  * the services aliases. *
  *
@@ -600,6 +642,7 @@ int m_chankill(aClient *cptr, aClient *sptr, int parc, char *parv[])
 int m_svshost(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
     aClient *acptr;
+    char oldhost[HOSTLEN+1];
 
     if(!IsULine(sptr) || parc<3 || *parv[2]==0)
         return 0; /* Not a u:lined server or not enough parameters */
@@ -610,6 +653,7 @@ int m_svshost(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if(strlen(parv[2]) > HOSTLEN)
         return 0; /* The requested host is too long */
 
+    snprintf(oldhost, HOSTLEN, "%s", acptr->user->host);
     /* Save the real hostname if it's a local client */
     if(MyClient(acptr))
     {
@@ -631,13 +675,19 @@ int m_svshost(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 MyMalloc(strlen(acptr->hostip) + 1);
             strcpy(acptr->user->real_oper_ip, acptr->hostip);
         }
-        strcpy(acptr->sockhost, parv[2]);
+        //strcpy(acptr->sockhost, parv[2]);
     }
 
+    if (0!=*parv[3]) strcpy(acptr->user->username, parv[3]); /* Set the requested host */
     strcpy(acptr->user->host, parv[2]); /* Set the requested host */
 
     /* Pass it to all the other servers */
-    sendto_serv_butone(cptr, ":%s SVSHOST %s %s", parv[0], parv[1], parv[2]);
+    if (0==*parv[3])
+      sendto_serv_butone(cptr, ":%s SVSHOST %s %s", parv[0], parv[1], parv[2]);
+    else // Send svsident
+      sendto_serv_butone(cptr, ":%s SVSHOST %s %s %s", parv[0], parv[1], parv[2], parv[3]);
+    char *oldh=oldhost;
+    hostchange_qjm(acptr, oldh);
 
     return 0;
 }

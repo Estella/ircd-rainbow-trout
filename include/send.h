@@ -50,6 +50,8 @@ extern void sendto_all_butone(aClient *one, aClient *from, char *pattern, ...) A
 extern void sendto_all_servmask(aClient *from, char *mask, char *pattern, ...) ATTRIBUTE_PRINTF(3, 4);
 extern void sendto_channel_butone(aClient *one, aClient *from, 
 				  aChannel *chptr, char *pattern, ...) ATTRIBUTE_PRINTF(4, 5);
+extern void sendto_channel_butone_local(aClient *one, aClient *from, 
+				  aChannel *chptr, char *pattern, ...) ATTRIBUTE_PRINTF(4, 5);
 extern void sendto_channel_remote_butone(aClient *one, aClient *from, 
 				         aChannel *chptr, char *pattern, ...) ATTRIBUTE_PRINTF(4, 5);
 extern void sendto_channel_butserv(aChannel *chptr, aClient *from,
@@ -63,6 +65,7 @@ extern void sendto_channelopvoice_butserv_me(aChannel *chptr, aClient *from,
 extern void sendto_channelflags_butone(aClient *, aClient *, aChannel *,
                                        int, char *, ...) ATTRIBUTE_PRINTF(5, 6);
 extern void sendto_common_channels(aClient *user, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);
+extern void sendto_common_channels_butfrom(aClient *user, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);
 extern void send_quit_to_common_channels(aClient *from, char *reason);
 extern void send_part_to_common_channels(aClient *from, char *reason);
 extern void sendto_fdlist(fdlist *listp, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);

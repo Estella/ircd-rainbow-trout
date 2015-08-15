@@ -838,7 +838,9 @@ struct User
     time_t      last;
     int         joined;        /* number of channels joined */
     char        username[USERLEN + 1];
+    char        rusername[USERLEN + 1];
     char        host[HOSTLEN + 1];
+    char        rhost[HOSTLEN + 1];
     char       *server;        /* pointer to scached server name */
     unsigned int servicetype;  /* set by SVSMODE +T */
     unsigned long servicestamp; /* set by SVSMODE +d */

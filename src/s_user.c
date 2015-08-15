@@ -867,6 +867,9 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
     else
         strncpyzt(user->username, username, USERLEN + 1);
 
+    strncpyzt(user->rusername, username, USERLEN + 1);
+    strncpyzt(user->rhost, sptr->user->host, HOSTLEN + 1);
+
     SetClient(sptr);
     /* Increment our total user count here */
     if (++Count.total > Count.max_tot)
