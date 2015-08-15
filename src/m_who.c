@@ -751,10 +751,11 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		status[i++]=(ac->user->away==NULL ? 'H' : 'G');
 		status[i]=(IsAnOper(ac) ? '*' : ((IsInvisible(ac) &&
 						  IsOper(sptr)) ? '#' : 0));
-		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_CHANOP) ? '@'
+		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_SUPEROP) ? '!'
+						 : ((cm->flags&CHFL_CHANOP) ? '@'
 						 : ((cm->flags&CHFL_HALFOP) ? '%'
 						 : ((cm->flags&CHFL_VOICE) ? 
-						    '+' : 0)));
+						    '+' : 0))));
 		status[++i]=0;
 		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   wsopts.channel->chname, ac->user->username,
@@ -823,10 +824,11 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		status[i++]=(ac->user->away==NULL ? 'H' : 'G');
 		status[i]=(IsAnOper(ac) ? '*' : ((IsInvisible(ac) &&
 						  IsOper(sptr)) ? '%' : 0));
-		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_CHANOP) ? '@'
+		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_SUPEROP) ? '!'
+ 						 : ((cm->flags&CHFL_CHANOP) ? '@'
  						 : ((cm->flags&CHFL_HALFOP) ? '%'
 						 : ((cm->flags&CHFL_VOICE)
-							? '+' : 0)));
+							? '+' : 0))));
 		status[++i]=0;
 		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   lp->value.chptr->chname, ac->user->username,
