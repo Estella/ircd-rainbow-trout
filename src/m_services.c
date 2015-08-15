@@ -70,7 +70,7 @@ hostchange_qjm (aClient *cptr, char *oldhost)
             strcat(mvb, " ");
         }
 
-        if (is_chan_voice(cptr, clink->value.chptr)) {
+        if (has_voice(cptr, clink->value.chptr)) {
             *mb++ = 'v';
             strcat(mvb, cptr->name);
             strcat(mvb, " ");
