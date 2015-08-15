@@ -2132,12 +2132,12 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             /* if we have the user, set them +/-[vo] */
             if(change=='+')
             {
-                cm->flags|=(*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : CHFL_VOICE);
+                cm->flags|=(*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : *modes=='a' ? CHFL_SUPEROP : CHFL_VOICE);
                 if(chptr->mode.mode & MODE_AUDITORIUM) sendto_channel_butserv_noopvoice(chptr, who, ":%s JOIN :%s", who->name, chptr->chname);
             }
             else
             {
-                cm->flags&=~((*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : CHFL_VOICE));
+                cm->flags&=~((*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : *modes=='a' ? CHFL_SUPEROP : CHFL_VOICE));
                 if(chptr->mode.mode & MODE_AUDITORIUM) sendto_channel_butserv_noopvoice(chptr, who, PartFmt, who->name, chptr->chname);
             }
             
@@ -2146,12 +2146,6 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             ADD_PARA(cm->cptr->name)
                 args++;
             nmodes++;
-            if (IsServer(sptr) && *modes == 'o' && change=='+') 
-            {
-                chptr->channelts = 0;
-                sendto_ops("Server %s setting +o and blasting TS on %s - services bug???",
-                           sptr->name, chptr->chname);
-            }
             break;
 
 #ifdef INVITE_LISTS
