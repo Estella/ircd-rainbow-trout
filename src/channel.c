@@ -1402,7 +1402,7 @@ int is_chan_op(aClient *cptr, aChannel *chptr)
     
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
-            return ((cm->flags & CHFL_CHANOP) || (cm->flags & CHFL_SUPEROP));
+            return ((cm->flags & CHFL_CHANOP) != 0 || (cm->flags & CHFL_SUPEROP) != 0);
     
     return 0;
 }
@@ -1413,7 +1413,7 @@ int is_chan_opsuper(aClient *cptr, aChannel *chptr)
     
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
-            return ((cm->flags & CHFL_SUPEROP) || (cm->flags & CHFL_CHANOP));
+            return ((cm->flags & CHFL_SUPEROP) != 0 || (cm->flags & CHFL_CHANOP) != 0);
     
     return 0;
 }
@@ -4125,7 +4125,7 @@ int m_invite(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
         }
 
-        if (!is_chan_op(sptr, chptr))
+        if (!is_chan_op(sptr, chptr) && !is_chan_halfop(sptr, chptr) && !is_chan_superop(sptr, chptr))
         {
             sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0],
                        chptr->chname);
