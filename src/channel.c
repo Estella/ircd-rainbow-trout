@@ -1402,7 +1402,7 @@ int is_chan_op(aClient *cptr, aChannel *chptr)
     
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
-            return (cm->flags & CHFL_CHANOP);
+            return ((cm->flags & CHFL_CHANOP) || (cm->flags & CHFL_SUPEROP));
     
     return 0;
 }
