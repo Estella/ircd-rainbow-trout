@@ -1887,12 +1887,12 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (MyClient(sptr))
     {
-        if (is_chan_superop(sptr, chptr))
-            chanop = CHFL_SUPEROP|CHFL_CHANOP;
-        if (is_chan_op(sptr, chptr))
-            chanop = CHFL_CHANOP;
         if (is_chan_halfop(sptr, chptr))
             chanop = CHFL_HALFOP;
+        if (is_chan_op(sptr, chptr))
+            chanop = CHFL_CHANOP;
+        if (is_chan_superop(sptr, chptr))
+            chanop = CHFL_SUPEROP|CHFL_CHANOP;
     }
     else
         chanop = CHFL_SUPEROP|CHFL_CHANOP;
