@@ -1888,7 +1888,7 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (MyClient(sptr))
     {
         if (is_chan_superop(sptr, chptr))
-            chanop = CHFL_SUPEROP;
+            chanop = CHFL_SUPEROP|CHFL_CHANOP;
         if (is_chan_op(sptr, chptr))
             chanop = CHFL_CHANOP;
         if (is_chan_halfop(sptr, chptr))
@@ -2057,7 +2057,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             break;
 
         case 'O':
-            if (!(level&(CHFL_CHANOP)))
+            if (!(level&(CHFL_CHANOP)) && !(level&CHFL_SUPEROP))
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2814,7 +2814,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             /* phew, no more tough modes. }:>, the rest are all
              * covered in one step 
              * with the above array */
-            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP))) 
+            if(!(level&(CHFL_SUPEROP)) && !(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP))) 
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
