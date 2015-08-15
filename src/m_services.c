@@ -678,14 +678,10 @@ int m_svshost(aClient *cptr, aClient *sptr, int parc, char *parv[])
         //strcpy(acptr->sockhost, parv[2]);
     }
 
-    if (0!=*parv[3]) strcpy(acptr->user->username, parv[3]); /* Set the requested host */
     strcpy(acptr->user->host, parv[2]); /* Set the requested host */
 
     /* Pass it to all the other servers */
-    if (0==*parv[3])
-      sendto_serv_butone(cptr, ":%s SVSHOST %s %s", parv[0], parv[1], parv[2]);
-    else // Send svsident
-      sendto_serv_butone(cptr, ":%s SVSHOST %s %s %s", parv[0], parv[1], parv[2], parv[3]);
+    sendto_serv_butone(cptr, ":%s SVSHOST %s %s", parv[0], parv[1], parv[2]);
     char *oldh=oldhost;
     hostchange_qjm(acptr, oldh);
 
