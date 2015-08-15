@@ -91,7 +91,7 @@ void build_rplcache(void)
 #ifdef INVITE_LISTS
     s += ircsprintf(s, " INVEX");
 #endif
-    s += ircsprintf(s, " CHANMODES=b");
+    s += ircsprintf(s, " CHANMODES=bq");
 #ifdef EXEMPT_LISTS
     *s++ = 'e';
 #endif
