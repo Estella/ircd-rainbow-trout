@@ -1433,7 +1433,7 @@ aClient *add_connection(aListener *lptr, int fd)
         set_non_blocking(fd, acptr);
         set_sock_opts(fd, acptr);
         SSL_set_fd(acptr->ssl, fd);
-        if(!safe_ssl_accept(acptr, fd))
+        if(!SSL_connect(acptr->ssl))
         {
             SSL_set_shutdown(acptr->ssl, SSL_RECEIVED_SHUTDOWN);
             ssl_smart_shutdown(acptr->ssl);
