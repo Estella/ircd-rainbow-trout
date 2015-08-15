@@ -487,6 +487,73 @@ static int add_banid(aClient *cptr, aChannel *chptr, char *banid)
     return 0;
 }
 
+/* "Ban" functions to work with mode +q */
+/* add_banid - add an id to be quieted to the channel  (belongs to cptr) */
+
+static int add_quietid(aClient *cptr, aChannel *chptr, char *banid)
+{
+    aQuiet      *quiet;
+    int          cnt = 0;
+    
+    for (quiet = chptr->quietlist; quiet; quiet = quiet->next)
+    {
+        /* Begin unbreaking redundant ban checking.  First step is to allow
+         * ALL non-duplicates from remote servers.  Local clients are still
+         * subject to the flawed redundancy check for compatibility with
+         * older servers.  This check can be corrected later.  -Quension */
+        if (MyClient(cptr))
+        {
+            if (++cnt >= MAXBANS)
+            {
+                sendto_one(cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
+                        chptr->chname, banid, "quiet");
+                return -1;
+            }
+            if (!match(quiet->banstr, banid))
+                return -1;
+        }
+        else if (!mycmp(quiet->banstr, banid))
+            return -1;
+    }
+
+    quiet = (aQuiet *) MyMalloc(sizeof(aQuiet));
+    quiet->banstr = (char *) MyMalloc(strlen(banid) + 1);
+    (void) strcpy(quiet->banstr, banid);
+    quiet->next = chptr->quietlist;
+    
+    if (IsPerson(cptr))
+    {
+        quiet->who = (char *) MyMalloc(strlen(cptr->name) +
+                                     strlen(cptr->user->username) +
+                                     strlen(cptr->user->host) + 3);
+        (void) ircsprintf(quiet->who, "%s!%s@%s",
+                          cptr->name, cptr->user->username, cptr->user->host);
+    }
+    else
+    {
+        quiet->who = (char *) MyMalloc(strlen(cptr->name) + 1);
+        (void) strcpy(quiet->who, cptr->name);
+    }
+    
+    /* determine what 'type' of mask this is, for less matching later */
+    
+    if(banid[0] == '*' && banid[1] == '!')
+    {
+        if(banid[2] == '*' && banid[3] == '@')
+            quiet->type = MTYP_HOST;
+        else
+            quiet->type = MTYP_USERHOST;
+    }
+    else
+        quiet->type = MTYP_FULL;
+
+    quiet->when = timeofday;
+    chptr->quietlist = quiet;
+    chptr->quietserial++;
+    
+    return 0;
+}
+
 /*
  * del_banid - delete an id belonging to cptr if banid is null,
  * deleteall banids belonging to cptr.
@@ -499,6 +566,34 @@ static int del_banid(aChannel *chptr, char *banid)
    if (!banid)
        return -1;
    for (ban = &(chptr->banlist); *ban; ban = &((*ban)->next))
+       if (mycmp(banid, (*ban)->banstr) == 0)
+       {
+           tmp = *ban;
+           *ban = tmp->next;
+
+           chptr->banserial++;
+
+           MyFree(tmp->banstr);
+           MyFree(tmp->who);
+           MyFree(tmp);
+           
+           break;
+       }
+   return 0;
+}
+
+/*
+ * del_quietid - delete an id belonging to cptr if banid is null,
+ * deleteall banids belonging to cptr.
+ */
+static int del_quietid(aChannel *chptr, char *banid)
+{
+   aQuiet        **ban;
+   aQuiet         *tmp;
+
+   if (!banid)
+       return -1;
+   for (ban = &(chptr->quietlist); *ban; ban = &((*ban)->next))
        if (mycmp(banid, (*ban)->banstr) == 0)
        {
            tmp = *ban;
@@ -572,6 +667,64 @@ static int is_banned(aClient *cptr, aChannel *chptr, chanMember *cm)
 }
 
 /*
+ * is_quieted - returns CHFL_BANNED if banned else 0
+ * 
+ * caches banned status in chanMember for can_send()
+ *   -Quension [Jun 2004]
+ * thanks Quension, that means less work for me :)
+ *   -janicez [Aug 2015]
+ */
+
+static int is_quieted(aClient *cptr, aChannel *chptr, chanMember *cm)
+{
+    aQuiet       *ban;
+#ifdef EXEMPT_LISTS
+    aBanExempt *exempt;
+#endif
+    char        s[NICKLEN + USERLEN + HOSTLEN + 6];
+    char       *s2;
+    
+    if (!IsPerson(cptr))
+        return 0;
+
+    /* if cache is valid, use it */
+    if (cm)
+    {
+        if (cm->quietserial == chptr->quietserial)
+            return (cm->flags & CHFL_BANNED);
+        cm->quietserial = chptr->quietserial;
+        cm->flags &= ~CHFL_BANNED;
+    }
+
+    strcpy(s, make_nick_user_host(cptr->name, cptr->user->username,
+                                  cptr->user->host));
+    s2 = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->hostip);
+
+#ifdef EXEMPT_LISTS
+    for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
+        if (!match(exempt->banstr, s) || !match(exempt->banstr, s2) ||
+	    client_matches_cidrstr(cptr, exempt->banstr))
+            return 0;
+#endif
+
+    for (ban = chptr->quietlist; ban; ban = ban->next)
+        if ((match(ban->banstr, s) == 0) ||
+            (match(ban->banstr, s2) == 0) ||
+	    client_matches_cidrstr(cptr, ban->banstr))
+            break;
+
+    if (ban)
+    {
+        if (cm)
+            cm->flags |= CHFL_BANNED;
+        return CHFL_BANNED;
+    }
+
+    return 0;
+}
+
+/*
  * Forces the cached banned status for a user to be flushed in all the channels
  * they are in.
  */
@@ -615,6 +768,38 @@ aBan *nick_is_banned(aChannel *chptr, char *nick, aClient *cptr)
 #endif
 
     for (ban = chptr->banlist; ban; ban = ban->next)
+        if (ban->type == MTYP_FULL &&        /* only check applicable bans */
+            ((match(ban->banstr, s2) == 0) ||    /* check host before IP */
+             (match(ban->banstr, s) == 0) ||
+	     client_matches_cidrstr(cptr, ban->banstr)))
+            break;
+    return (ban);
+}
+
+aQuiet *nick_is_quieted(aChannel *chptr, char *nick, aClient *cptr)
+{
+    aQuiet *ban;
+#ifdef EXEMPT_LISTS
+    aBanExempt *exempt;
+#endif
+    char *s, s2[NICKLEN+USERLEN+HOSTLEN+6];
+    
+    if (!IsPerson(cptr)) return NULL;
+    
+    strcpy(s2, make_nick_user_host(nick, cptr->user->username,
+                                   cptr->user->host));
+    s = make_nick_user_host(nick, cptr->user->username, cptr->hostip);
+
+#ifdef EXEMPT_LISTS
+    for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
+        if (exempt->type == MTYP_FULL &&
+            ((match(exempt->banstr, s2) == 0) ||
+             (match(exempt->banstr, s) == 0) ||
+	     client_matches_cidrstr(cptr, exempt->banstr)))
+            return NULL;
+#endif
+
+    for (ban = chptr->quietlist; ban; ban = ban->next)
         if (ban->type == MTYP_FULL &&        /* only check applicable bans */
             ((match(ban->banstr, s2) == 0) ||    /* check host before IP */
              (match(ban->banstr, s) == 0) ||
@@ -685,6 +870,91 @@ void remove_matching_bans(aChannel *chptr, aClient *cptr, aClient *from)
               {
                   strcpy(parabuf, ban->banstr);
                   *m++ = 'b';
+                  count = 1;
+              }
+              else
+                  count = 0;
+              *m = '\0';
+          }
+          
+          del_banid(chptr, ban->banstr);
+      }
+      ban = bnext;
+  }
+  
+  if(*parabuf)
+  {
+      sendto_channel_butserv_me(chptr, from, ":%s MODE %s %s %s", from->name,
+                                chptr->chname, modebuf, parabuf);
+      sendto_serv_butone(from, ":%s MODE %s %ld %s %s", from->name,
+                         chptr->chname, chptr->channelts, modebuf, parabuf);
+  }
+  
+  return;
+}
+
+void remove_matching_quiets(aChannel *chptr, aClient *cptr, aClient *from) 
+{
+    aQuiet *ban, *bnext;
+    char targhost[NICKLEN+USERLEN+HOSTLEN+6];
+    char targip[NICKLEN+USERLEN+HOSTLEN+6];
+    char *m;
+    int count = 0, send = 0;
+    
+    if (!IsPerson(cptr)) return;
+    
+    strcpy(targhost, make_nick_user_host(cptr->name, cptr->user->username,
+                                         cptr->user->host));
+  strcpy(targip, make_nick_user_host(cptr->name, cptr->user->username,
+                                     cptr->hostip));
+  
+  m = modebuf;  
+  *m++ = '-';
+  *m = '\0'; 
+  
+  *parabuf = '\0';
+  
+  ban = chptr->quietlist;
+  
+  while(ban)
+  {
+      bnext = ban->next;
+      if((match(ban->banstr, targhost) == 0) ||
+         (match(ban->banstr, targip) == 0) ||
+	 client_matches_cidrstr(cptr, ban->banstr))
+      {
+          if (strlen(parabuf) + strlen(ban->banstr) + 10 < (size_t) MODEBUFLEN)
+          {
+              if(*parabuf)
+                  strcat(parabuf, " ");
+              strcat(parabuf, ban->banstr);
+              count++;
+              *m++ = 'q';
+              *m = '\0';
+          }
+          else 
+              if(*parabuf)
+                  send = 1;
+          
+          if(count == MAXTSMODEPARAMS)
+              send = 1;
+          
+          if(send)
+          {
+              sendto_channel_butserv_me(chptr, from, ":%s MODE %s %s %s", 
+                                        from->name, chptr->chname, modebuf,
+                                        parabuf);
+              sendto_serv_butone(from, ":%s MODE %s %ld %s %s", from->name,
+                                 chptr->chname, chptr->channelts, modebuf,
+                                 parabuf);
+              send = 0;
+              *parabuf = '\0';
+              m = modebuf;
+              *m++ = '-';
+              if(count != MAXTSMODEPARAMS)
+              {
+                  strcpy(parabuf, ban->banstr);
+                  *m++ = 'q';
                   count = 1;
               }
               else
@@ -1115,6 +1385,17 @@ void remove_user_from_channel(aClient *sptr, aChannel *chptr)
     sub1_from_channel(chptr);
 }
 
+int is_chan_superop(aClient *cptr, aChannel *chptr)
+{
+    chanMember   *cm;
+    
+    if (chptr)
+        if ((cm = find_user_member(chptr->members, cptr)))
+            return (cm->flags & CHFL_SUPEROP);
+    
+    return 0;
+}
+
 int is_chan_op(aClient *cptr, aChannel *chptr)
 {
     chanMember   *cm;
@@ -1122,6 +1403,17 @@ int is_chan_op(aClient *cptr, aChannel *chptr)
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
             return (cm->flags & CHFL_CHANOP);
+    
+    return 0;
+}
+
+int is_chan_opsuper(aClient *cptr, aChannel *chptr)
+{
+    chanMember   *cm;
+    
+    if (chptr)
+        if ((cm = find_user_member(chptr->members, cptr)))
+            return ((cm->flags & CHFL_SUPEROP) || (cm->flags & CHFL_CHANOP));
     
     return 0;
 }
@@ -1143,7 +1435,7 @@ int is_chan_ophalf(aClient *cptr, aChannel *chptr)
     
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
-            return ((cm->flags & CHFL_HALFOP) || (cm->flags & CHFL_CHANOP));
+            return ((cm->flags & CHFL_HALFOP) || (cm->flags & CHFL_SUPEROP) || (cm->flags & CHFL_CHANOP));
     
     return 0;
 }
@@ -1154,7 +1446,7 @@ int is_chan_opvoice(aClient *cptr, aChannel *chptr)
     
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
-            return ((cm->flags & CHFL_CHANOP) || (cm->flags & CHFL_HALFOP) || (cm->flags & CHFL_VOICE));
+            return ((cm->flags & CHFL_CHANOP) || (cm->flags & CHFL_HALFOP) || (cm->flags & CHFL_SUPEROP) || (cm->flags & CHFL_VOICE));
     
     return 0;
 }
@@ -1205,6 +1497,8 @@ int can_send(aClient *cptr, aChannel *chptr, char *msg)
             if ((chptr->mode.mode & MODE_NOCTRL) && msg_has_ctrls(msg))
                 return (ERR_NOCTRLSONCHAN);
             if (is_banned(cptr, chptr, NULL))
+                return (MODE_BAN);
+            if (is_quieted(cptr, chptr, NULL))
                 return (MODE_BAN); /*
                                 * channel is -n and user is not there;
                                 * we need to bquiet them if we can
@@ -1214,11 +1508,13 @@ int can_send(aClient *cptr, aChannel *chptr, char *msg)
     else
     {
         /* ops and voices can talk through everything except NOCTRL */
-        if (!(cm->flags & (CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE)))
+        if (!(cm->flags & (CHFL_SUPEROP | CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE)))
         {
             if (chptr->mode.mode & MODE_MODERATED)
                 return (MODE_MODERATED);
             if (is_banned(cptr, chptr, cm))
+                return (MODE_BAN);
+            if (is_quieted(cptr, chptr, cm))
                 return (MODE_BAN);
             if ((chptr->mode.mode & MODE_MODREG) && !IsRegNick(cptr))
                 return (ERR_NEEDREGGEDNICK);
@@ -1315,6 +1611,7 @@ static void channel_modes(aClient *cptr, char *mbuf, char *pbuf,
 static void send_channel_lists(aClient *cptr, aChannel *chptr)
 {
     aBan   *bp;
+    aQuiet   *qp;
 #ifdef EXEMPT_LISTS
     aBanExempt *exempt;
 #endif
@@ -1358,6 +1655,43 @@ static void send_channel_lists(aClient *cptr, aChannel *chptr)
             {
                 strcpy(parabuf, bp->banstr);
                 *cp++ = 'b';
+                count = 1;
+            }
+            else
+                count = 0;
+            *cp = '\0';
+        }
+    }
+
+    for (qp = chptr->quietlist; qp; qp = qp->next) 
+    {
+        if (strlen(parabuf) + strlen(qp->banstr) + 20 < (size_t) MODEBUFLEN) 
+        {
+            if(*parabuf)
+                strcat(parabuf, " ");
+            strcat(parabuf, qp->banstr);
+            count++;
+            *cp++ = 'q';
+            *cp = '\0';
+        }
+        else if (*parabuf)
+            send = 1;
+
+        if (count == MAXTSMODEPARAMS)
+            send = 1;
+
+        if (send) 
+        {
+            sendto_one(cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
+                           chptr->channelts, modebuf, parabuf);
+            send = 0;
+            *parabuf = '\0';
+            cp = modebuf;
+            *cp++ = '+';
+            if (count != MAXTSMODEPARAMS) 
+            {
+                strcpy(parabuf, qp->banstr);
+                *cp++ = 'q';
                 count = 1;
             }
             else
@@ -1553,13 +1887,15 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (MyClient(sptr))
     {
+        if (is_chan_superop(sptr, chptr))
+            chanop = CHFL_SUPEROP;
         if (is_chan_op(sptr, chptr))
             chanop = CHFL_CHANOP;
         if (is_chan_halfop(sptr, chptr))
             chanop = CHFL_HALFOP;
     }
     else
-        chanop = CHFL_CHANOP;
+        chanop = CHFL_SUPEROP|CHFL_CHANOP;
         
     if (parc < 3)
     {
@@ -1649,6 +1985,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
     Link *lp; /* for walking lists */
     chanMember *cm; /* for walking channel member lists */
     aBan *bp; /* for walking banlists */
+    aQuiet *qp; /* for walking quietlists */
     char *modes=parv[0]; /* user's idea of mode changes */
     int args; /* counter for what argument we're on */
     int anylistsent = IsServer(sptr) ? 1 : 0; /* Only send 1 list and not to servers */
@@ -1740,15 +2077,21 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 nmodes++;
             }
             break;
+        case 'a':
         case 'o':
         case 'h':
         case 'v':
-            if(!(level&(CHFL_CHANOP)) && *modes == 'o')
+            if(!(level&(CHFL_SUPEROP)) && *modes == 'a')
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
             }
-            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && *modes == 'v')
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_SUPEROP)) && *modes == 'o')
+            {
+                errors |= SM_ERR_NOPRIVS;
+                break;
+            }
+            if(!(level&(CHFL_SUPEROP)) && !(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && *modes == 'v')
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -1955,7 +2298,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
         case 'b':
             /* if the user has no more arguments, then they just want
              * to see the bans, okay, cool. */
-            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && parv[args] != NULL)
+            if(!(level&(CHFL_SUPEROP)) && !(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && parv[args] != NULL)
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2029,6 +2372,84 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             nmodes++;
             break;
 
+    
+        case 'q':
+            /* if the user has no more arguments, then they just want
+             * to see the bans, okay, cool. */
+            if(!(level&(CHFL_SUPEROP)) && !(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && parv[args] != NULL)
+            {
+                errors |= SM_ERR_NOPRIVS;
+                break;
+            }
+            /* show them the bans, woowoo */
+            if(parv[args]==NULL)
+            {
+                if (anylistsent)
+                    break;
+                for(qp=chptr->quietlist;qp;qp=qp->next)
+                    sendto_one(sptr, ":%s 728 %s %s q %s %s %lu", me.name, cptr->name,
+                               chptr->chname, qp->banstr, qp->who, qp->when);
+                sendto_one(cptr, ":%s 729 %s %s :End of channel mute list.", me.name,
+                           cptr->name, chptr->chname);
+                anylistsent = 1;
+                break; /* we don't pass this along, either.. */
+            }
+            if(++nparams > maxparams)
+            {
+                /* too many modes with params, eat this one */
+                args++;
+                break;
+            }
+            
+            /* do not allow : in bans, or a null ban */
+            if(*parv[args]==':' || *parv[args] == '\0') 
+            {
+                args++;
+                break;
+            }
+
+#ifdef NO_LOCAL_CIDR_CHANNELBANS
+            if(MyClient(sptr) && strchr(parv[args],'/'))
+            {
+                sendto_one(sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
+                           me.name, sptr->name);
+                args++;
+                break;
+            }
+#endif
+
+            /* make a 'pretty' ban mask here, then try and set it */
+            /* okay kids, let's do this again.
+             * the buffer returned by pretty_mask is from 
+             * make_nick_user_host. This buffer is eaten by add/del banid.
+             * Thus, some poor schmuck gets himself on the banlist.
+             * Fixed. - lucas */
+            strcpy(nuhbuf, collapse(pretty_mask(parv[args])));
+            parv[args] = nuhbuf;
+            /* if we're going to overflow our mode buffer,
+             * drop the change instead */
+            if((prelen + (mbuf - morig) + pidx + strlen(nuhbuf) + 1) > 
+               REALMODEBUFLEN) 
+            {
+                args++;
+                break;
+            }
+            /* if we can't add or delete (depending) the ban, change is
+             * worthless anyhow */
+            
+            if(!(change=='+' && !add_quietid(sptr, chptr, parv[args])) && 
+               !(change=='-' && !del_quietid(chptr, parv[args])))
+            {
+                args++;
+                break;
+            }
+            
+            *mbuf++ = 'q';
+            ADD_PARA(parv[args])
+                args++;
+            nmodes++;
+            break;
+
         case 'j':
 #ifdef JOINRATE_SERVER_ONLY
             if (MyClient(sptr)) 
@@ -2039,7 +2460,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             }
 #endif
 
-            if(!(level&(CHFL_CHANOP))) 
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_SUPEROP))) 
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2743,6 +3164,7 @@ static void sub1_from_channel(aChannel *chptr)
 {
     Link   *tmp;
     aBan              *bp, *bprem;
+    aQuiet            *qp, *qprem;
 #ifdef INVITE_LISTS
     anInvite          *invite, *invrem;
 #endif
@@ -2766,6 +3188,15 @@ static void sub1_from_channel(aChannel *chptr)
             MyFree(bprem->banstr);
             MyFree(bprem->who);
             MyFree(bprem);
+        }
+        qp = chptr->quietlist;
+        while (qp)
+        {
+            qprem = qp;
+            qp = qp->next;
+            MyFree(qprem->banstr);
+            MyFree(qprem->who);
+            MyFree(qprem);
         }
 #ifdef INVITE_LISTS
         invite = chptr->invite_list;
@@ -2977,7 +3408,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
              * local client is first to enter previously nonexistent *
              * channel so make them (rightfully) the Channel * Operator.
              */
-            flags = (ChannelExists(name)) ? 0 : CHFL_CHANOP;
+            flags = (ChannelExists(name)) ? 0 : CHFL_SUPEROP|CHFL_CHANOP;
 
             if (!IsAnOper(sptr) && server_was_split
                 && !(confopts & FLAGS_SPLITOPOK))
@@ -4187,7 +4618,9 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
         acptr = cm->cptr;
         if(IsInvisible(acptr) && !member)
             continue;
-        if(cm->flags & CHFL_CHANOP)
+        if(cm->flags & CHFL_SUPEROP)
+            buf[idx++] = '!';
+        else if(cm->flags & CHFL_CHANOP)
             buf[idx++] = '@';
         else if(cm->flags & CHFL_HALFOP)
             buf[idx++] = '%';
@@ -4891,11 +5324,29 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
     chptr->jrl_bucket = 0;
     chptr->jrl_last = NOW;  /* slow start */
         
-    if (!keepourmodes) /* deop and devoice everyone! */
+    if (!keepourmodes) /* desuper, deop, half-deop and devoice everyone! */
     {
         what = 0;
         for (cm = chptr->members; cm; cm = cm->next) 
         {
+            if (cm->flags & MODE_SUPEROP) 
+            {
+                INSERTSIGN(-1,'-')
+                    *mbuf++ = 'a';
+                ADD_PARA(cm->cptr->name)
+                    pargs++;
+                if (pargs >= MAXMODEPARAMS) 
+                {
+                    *mbuf = '\0';
+                    parabuf[pbpos] = '\0';
+                    sjoin_sendit(cptr, sptr, chptr, parv[0]);
+                    mbuf = modebuf;
+                    *mbuf = '\0';
+                    pargs = pbpos = what = 0;
+                }
+                cm->flags &= ~MODE_SUPEROP;
+            }
+
             if (cm->flags & MODE_CHANOP) 
             {
                 INSERTSIGN(-1,'-')
@@ -4912,6 +5363,24 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     pargs = pbpos = what = 0;
                 }
                 cm->flags &= ~MODE_CHANOP;
+            }
+
+            if (cm->flags & MODE_HALFOP) 
+            {
+                INSERTSIGN(-1,'-')
+                    *mbuf++ = 'h';
+                ADD_PARA(cm->cptr->name)
+                    pargs++;
+                if (pargs >= MAXMODEPARAMS) 
+                {
+                    *mbuf = '\0';
+                    parabuf[pbpos] = '\0';
+                    sjoin_sendit(cptr, sptr, chptr, parv[0]);
+                    mbuf = modebuf;
+                    *mbuf = '\0';
+                    pargs = pbpos = what = 0;
+                }
+                cm->flags &= ~MODE_HALFOP;
             }
 
             if (cm->flags & MODE_VOICE) 
@@ -4987,14 +5456,32 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
          s = s0 = strtoken(&p, (char *) NULL, " ")) 
     {
         fl = 0;
-        if (*s == '@' || s[1] == '@' || s[2] == '@')
-            fl |= MODE_CHANOP;
-        if (*s == '%' || s[1] == '%' || s[2] == '%')
-            fl |= MODE_HALFOP;
-        if (*s == '+' || s[1] == '+' || s[2] == '+')
-            fl |= MODE_VOICE;
+        while (
+                *s == '!'
+             || *s == '@'
+             || *s == '%'
+             || *s == '+'
+              ) {
+          switch (*s) {
+            case '!':
+              fl |= MODE_SUPEROP;
+              break;
+            case '@':
+              fl |= MODE_CHANOP;
+              break;
+            case '%':
+              fl |= MODE_HALFOP;
+              break;
+            case '+':
+              fl |= MODE_VOICE;
+              break;
+          }
+          *s++;
+        }
         if (!keepnewmodes) 
         {
+            if (fl & MODE_SUPEROP)
+                fl = MODE_DEOPPED;
             if (fl & MODE_CHANOP)
                 fl = MODE_DEOPPED;
             if (fl & MODE_HALFOP)
@@ -5002,8 +5489,6 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
             else
                 fl = 0;
         }
-        while (*s == '@' || *s == '+')
-            s++;
         if (!(acptr = find_chasing(sptr, s, NULL)))
             continue;
         if (acptr->from != cptr)
@@ -5021,6 +5506,21 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
         else
         {
             ADD_SJBUF(s)
+        }
+        if (fl & MODE_SUPEROP) 
+        {
+            *mbuf++ = 'a';
+            ADD_PARA(s)
+            pargs++;
+            if (pargs >= MAXMODEPARAMS) 
+            {
+                *mbuf = '\0';
+                parabuf[pbpos] = '\0';
+                sjoin_sendit(cptr, sptr, chptr, parv[0]);
+                mbuf = modebuf;
+                *mbuf++ = '+';
+                pargs = pbpos = 0;
+            }
         }
         if (fl & MODE_CHANOP) 
         {
@@ -5170,6 +5670,7 @@ memcount_channel(MCchannel *mc)
 {
     aChannel    *chptr;
     aBan        *ban;
+    aQuiet      *quiet;
 #ifdef EXEMPT_LISTS
     aBanExempt  *exempt;
 #endif
@@ -5195,6 +5696,14 @@ memcount_channel(MCchannel *mc)
             mc->bans.m += sizeof(*ban);
             mc->bans.m += strlen(ban->banstr) + 1;
             mc->bans.m += strlen(ban->who) + 1;
+        }
+
+        for (quiet = chptr->quietlist; quiet; quiet = quiet->next)
+        {
+            mc->bans.c++;
+            mc->bans.m += sizeof(*quiet);
+            mc->bans.m += strlen(quiet->banstr) + 1;
+            mc->bans.m += strlen(quiet->who) + 1;
         }
 #ifdef EXEMPT_LISTS
         for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)

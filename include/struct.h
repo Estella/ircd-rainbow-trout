@@ -87,6 +87,7 @@ typedef struct ChanLink chanMember;
 typedef struct SMode Mode;
 typedef struct Watch aWatch;
 typedef struct Ban aBan;
+typedef struct Quiet aQuiet;
 #ifdef INVITE_LISTS
 typedef struct LInvite anInvite;
 #endif
@@ -135,10 +136,11 @@ typedef struct SServicesTag ServicesTag;
 #define	BUFSIZE		    512	/* WARNING: *DONT* CHANGE THIS!!!! */
 #define	MAXRECIPIENTS       20
 #define	MAXBANS	 	    200
-#define MAXINVITELIST       100
-#define MAXEXEMPTLIST       100
+#define MAXINVITELIST       200
+#define MAXEXEMPTLIST       200
+#define MAXQUIETLIST        200
 
-#define MOTDLINELEN	    90
+#define MOTDLINELEN	    220
 
 #define        MAXSILES        10
 #define        MAXSILELENGTH   128
@@ -1149,6 +1151,15 @@ struct Ban
     aBan 	   *next;
 };
 
+struct Quiet
+{
+    char       *banstr;
+    char       *who;
+    time_t      when;
+    u_char	    type;
+    aQuiet 	   *next;
+};
+
 #ifdef INVITE_LISTS
 /* channel invite list structure */
 
@@ -1181,6 +1192,7 @@ struct ChanLink
     aClient *cptr;
     int flags;
     unsigned int banserial;     /* used for bquiet cache */
+    unsigned int quietserial;     /* used for q-quiet cache */
 };
 
 /* general link structure used for chains */
@@ -1230,6 +1242,7 @@ struct Channel
     chanMember* members;
     Link*       invites; /* users invited to the channel */
     aBan*       banlist;
+    aQuiet*     quietlist;
 #ifdef INVITE_LISTS
     anInvite*   invite_list; /* +I list */
 #endif
@@ -1248,6 +1261,7 @@ struct Channel
     int         jrw_debt_ctr;   /* join rate warning: in-debt counter */
     int         jrw_debt_ts;    /* join rate warning: debt begin timestamp */
     unsigned int banserial;     /* used for bquiet cache */
+    unsigned int quietserial;     /* used for q-quiet cache */
 };
 
 #define	TS_CURRENT	5	/* current TS protocol version */
@@ -1265,7 +1279,9 @@ struct Channel
 
 /* Extended channel flag modes */
 #define CHFL_HALFOP	0x200000 // Is a half operator, distinguishable by a %
-#define MODE_HALFOP	0x200000 // Is a half operator, distinguishable by a %
+#define CHFL_SUPEROP	0x400000 // Is a half operator, distinguishable by a %
+#define MODE_HALFOP	CHFL_HALFOP // Is a half operator, distinguishable by a %
+#define MODE_SUPEROP	CHFL_SUPEROP // Is a half operator, distinguishable by a %
 
 /* ban mask types */
 

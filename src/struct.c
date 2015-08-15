@@ -454,6 +454,11 @@ aBan *ch_banlist(aChannel *chptr)
     return chptr->banlist;
 }
 
+aQuiet *ch_quietlist(aChannel *chptr)
+{
+    return chptr->quietlist;
+}
+
 #ifdef INVITE_LISTS
 anInvite *ch_invite_list(aChannel *chptr)
 {
