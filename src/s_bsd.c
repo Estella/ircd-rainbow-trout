@@ -2108,7 +2108,7 @@ connect_inet(aConnect *aconn, aClient *cptr, int *lenp, int ssl)
       SetSSL(cptr);
       set_non_blocking(cptr->fd, cptr);
       set_sock_opts(cptr->fd, cptr);
-      SSL_set_fd(cptr->ssl, cptr->fd);
+      //SSL_set_fd(cptr->ssl, cptr->fd); //hmm
       if (!safe_ssl_accept(cptr, cptr->fd)) {
         // Server-Server SSL connection failed. Bail out.
         report_error("SSL error connecting to %s:%s - bailing out of THAT connect attempt.", cptr);
