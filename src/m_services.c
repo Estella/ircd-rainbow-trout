@@ -51,7 +51,7 @@ hostchange_qjm (aClient *cptr, char *oldhost)
     sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", cptr->name, cptr->user->username, oldhost, cptr->user->hostname);
 
     for (clink = cptr->user->channel, clink, clink = clink->next) {
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->hostname, clink->value.chptr->name);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->hostname, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb = 'a';
             strcat(mvb, cptr->name);
@@ -77,7 +77,7 @@ hostchange_qjm (aClient *cptr, char *oldhost)
         }
 
         mb = mode;
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->hostname, clink->value.chptr->name, mb, mvb);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->hostname, clink->value.chptr->chname, mb, mvb);
     }
 }
 
