@@ -1821,6 +1821,8 @@ void send_channel_modes(aClient *cptr, aChannel *chptr)
             if (l == NULL)
                 break;
         }
+        if (l->flags & MODE_SUPEROP)
+            *t++ = '!';
         if (l->flags & MODE_CHANOP)
             *t++ = '@';
         if (l->flags & MODE_HALFOP)
@@ -4633,11 +4635,11 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
             continue;
         if(cm->flags & CHFL_SUPEROP)
             buf[idx++] = '!';
-        else if(cm->flags & CHFL_CHANOP)
+        if(cm->flags & CHFL_CHANOP)
             buf[idx++] = '@';
-        else if(cm->flags & CHFL_HALFOP)
+        if(cm->flags & CHFL_HALFOP)
             buf[idx++] = '%';
-        else if(cm->flags & CHFL_VOICE)
+        if(cm->flags & CHFL_VOICE)
             buf[idx++] = '+';
         else if((chptr->mode.mode & MODE_AUDITORIUM) && (sptr != acptr) && !is_chan_opvoice(sptr, chptr)) continue;
         for(s = acptr->name; *s; s++)
