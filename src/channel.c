@@ -3859,6 +3859,19 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
                         continue;
                     }
                 }
+                if(is_chan_superop(who, chptr) && !is_chan_superop(sptr, chptr)) {
+                    // In this case, we bail. - janicez
+
+                    if (MyConnect(sptr))
+                    {
+                        /* user on _my_ server, with no chanops.. so go away */
+                        sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+                                   me.name, parv[0], chptr->chname);
+                        sendto_one(who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only an op (and you're a super), so they failed.", me.name, parv[0], sptr->name, who->name);
+                        name = strtoken(&p, (char *) NULL, ",");
+                        continue;
+                    }
+                }
                 if((chptr->mode.mode & MODE_AUDITORIUM) && !is_chan_opvoice(who, chptr))
                 {
                     sendto_channelopvoice_butserv_me(chptr, sptr,
