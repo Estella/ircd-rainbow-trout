@@ -4020,7 +4020,7 @@ int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
         }
 
-        if ((chptr->mode.mode & MODE_TOPICLIMIT) && !is_chan_op(sptr, chptr))
+        if ((chptr->mode.mode & MODE_TOPICLIMIT) && !is_chan_opsuper(sptr, chptr))
         {
             sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0],
                        chptr->chname);
