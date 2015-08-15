@@ -1126,13 +1126,35 @@ int is_chan_op(aClient *cptr, aChannel *chptr)
     return 0;
 }
 
+int is_chan_halfop(aClient *cptr, aChannel *chptr)
+{
+    chanMember   *cm;
+    
+    if (chptr)
+        if ((cm = find_user_member(chptr->members, cptr)))
+            return (cm->flags & CHFL_HALFOP);
+    
+    return 0;
+}
+
+int is_chan_ophalf(aClient *cptr, aChannel *chptr)
+{
+    chanMember   *cm;
+    
+    if (chptr)
+        if ((cm = find_user_member(chptr->members, cptr)))
+            return ((cm->flags & CHFL_HALFOP) || (cm->flags & CHFL_CHANOP));
+    
+    return 0;
+}
+
 int is_chan_opvoice(aClient *cptr, aChannel *chptr)
 {
     chanMember   *cm;
     
     if (chptr)
         if ((cm = find_user_member(chptr->members, cptr)))
-            return ((cm->flags & CHFL_CHANOP) || (cm->flags & CHFL_VOICE));
+            return ((cm->flags & CHFL_CHANOP) || (cm->flags & CHFL_HALFOP) || (cm->flags & CHFL_VOICE));
     
     return 0;
 }
@@ -1192,7 +1214,7 @@ int can_send(aClient *cptr, aChannel *chptr, char *msg)
     else
     {
         /* ops and voices can talk through everything except NOCTRL */
-        if (!(cm->flags & (CHFL_CHANOP | CHFL_VOICE)))
+        if (!(cm->flags & (CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE)))
         {
             if (chptr->mode.mode & MODE_MODERATED)
                 return (MODE_MODERATED);
@@ -1423,7 +1445,7 @@ static void send_channel_lists(aClient *cptr, aChannel *chptr)
 /* send "cptr" a full list of the modes for channel chptr. */
 void send_channel_modes(aClient *cptr, aChannel *chptr)
 {
-    chanMember       *l, *anop = NULL, *skip = NULL;
+    chanMember       *l, *anop = NULL, *ahalf, *skip = NULL;
     int         n = 0;
     char       *t;
 
@@ -1467,6 +1489,8 @@ void send_channel_modes(aClient *cptr, aChannel *chptr)
         }
         if (l->flags & MODE_CHANOP)
             *t++ = '@';
+        if (l->flags & MODE_HALFOP)
+            *t++ = '%';
         if (l->flags & MODE_VOICE)
             *t++ = '+';
         strcpy(t, l->cptr->name);
@@ -1530,10 +1554,12 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (MyClient(sptr))
     {
         if (is_chan_op(sptr, chptr))
-            chanop = 1;
+            chanop = CHFL_CHANOP;
+        if (is_chan_halfop(sptr, chptr))
+            chanop = CHFL_HALFOP;
     }
     else
-        chanop = 2;
+        chanop = CHFL_CHANOP;
         
     if (parc < 3)
     {
@@ -1694,7 +1720,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             break;
 
         case 'O':
-            if (level<1)
+            if (!(level&(CHFL_CHANOP)))
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -1715,8 +1741,14 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             }
             break;
         case 'o':
+        case 'h':
         case 'v':
-            if(level<1) 
+            if(!(level&(CHFL_CHANOP)) && *modes == 'o')
+            {
+                errors |= SM_ERR_NOPRIVS;
+                break;
+            }
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && *modes == 'v')
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -1755,12 +1787,12 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             /* if we have the user, set them +/-[vo] */
             if(change=='+')
             {
-                cm->flags|=(*modes=='o' ? CHFL_CHANOP : CHFL_VOICE);
+                cm->flags|=(*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : CHFL_VOICE);
                 if(chptr->mode.mode & MODE_AUDITORIUM) sendto_channel_butserv_noopvoice(chptr, who, ":%s JOIN :%s", who->name, chptr->chname);
             }
             else
             {
-                cm->flags&=~((*modes=='o' ? CHFL_CHANOP : CHFL_VOICE));
+                cm->flags&=~((*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : CHFL_VOICE));
                 if(chptr->mode.mode & MODE_AUDITORIUM) sendto_channel_butserv_noopvoice(chptr, who, PartFmt, who->name, chptr->chname);
             }
             
@@ -1772,14 +1804,14 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             if (IsServer(sptr) && *modes == 'o' && change=='+') 
             {
                 chptr->channelts = 0;
-                sendto_ops("Server %s setting +o and blasting TS on %s",
+                sendto_ops("Server %s setting +o and blasting TS on %s - services bug???",
                            sptr->name, chptr->chname);
             }
             break;
 
 #ifdef INVITE_LISTS
         case 'I':
-            if (level < 1 && parv[args] != NULL)
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && parv[args] != NULL)
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -1851,7 +1883,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
 
 #ifdef EXEMPT_LISTS
         case 'e':
-            if (level < 1 && parv[args] != NULL)
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && parv[args] != NULL)
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -1923,7 +1955,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
         case 'b':
             /* if the user has no more arguments, then they just want
              * to see the bans, okay, cool. */
-            if(level < 1 && parv[args] != NULL)
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP)) && parv[args] != NULL)
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2007,7 +2039,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             }
 #endif
 
-            if(level<1) 
+            if(!(level&(CHFL_CHANOP))) 
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2137,7 +2169,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             }
 
         case 'l':
-            if(level<1) 
+            if(!(level&(CHFL_CHANOP))) 
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2205,7 +2237,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             }
 
         case 'k':
-            if(level<1) 
+            if(!(level&(CHFL_CHANOP))) 
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -2361,7 +2393,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             /* phew, no more tough modes. }:>, the rest are all
              * covered in one step 
              * with the above array */
-            if(level<1) 
+            if(!(level&(CHFL_CHANOP)) && !(level&(CHFL_HALFOP))) 
             {
                 errors |= SM_ERR_NOPRIVS;
                 break;
@@ -3308,8 +3340,12 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
          * -Dianora
          */
 
-        if (!IsServer(sptr) && !is_chan_op(sptr, chptr) && !IsULine(sptr))
+        if (!IsServer(sptr) && !is_chan_ophalf(sptr, chptr) && !IsULine(sptr))
         {
+            // Good fucking grief!@# Now that we have halfops (this is ircd-rainbow-trout)
+            // we have to make sure we're not allowing a half to kick a full. Scheisse.
+            // Actually, let's check this further down.
+
             /* was a user, not a server and user isn't seen as a chanop here */
 
             if (MyConnect(sptr))
@@ -3379,6 +3415,19 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
             if (IsMember(who, chptr))
             {
+                if(is_chan_op(who, chptr) && !is_chan_op(sptr, chptr)) {
+                    // In this case, we bail. - janicez
+
+                    if (MyConnect(sptr))
+                    {
+                        /* user on _my_ server, with no chanops.. so go away */
+                        sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+                                   me.name, parv[0], chptr->chname);
+                        sendto_one(who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only a halfop, so they failed.", me.name, parv[0], sptr->name, who->name);
+                        name = strtoken(&p, (char *) NULL, ",");
+                        continue;
+                    }
+                }
                 if((chptr->mode.mode & MODE_AUDITORIUM) && !is_chan_opvoice(who, chptr))
                 {
                     sendto_channelopvoice_butserv_me(chptr, sptr,
@@ -4140,6 +4189,8 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
             continue;
         if(cm->flags & CHFL_CHANOP)
             buf[idx++] = '@';
+        else if(cm->flags & CHFL_HALFOP)
+            buf[idx++] = '%';
         else if(cm->flags & CHFL_VOICE)
             buf[idx++] = '+';
         else if((chptr->mode.mode & MODE_AUDITORIUM) && (sptr != acptr) && !is_chan_opvoice(sptr, chptr)) continue;
@@ -4936,13 +4987,17 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
          s = s0 = strtoken(&p, (char *) NULL, " ")) 
     {
         fl = 0;
-        if (*s == '@' || s[1] == '@')
+        if (*s == '@' || s[1] == '@' || s[2] == '@')
             fl |= MODE_CHANOP;
-        if (*s == '+' || s[1] == '+')
+        if (*s == '%' || s[1] == '%' || s[2] == '%')
+            fl |= MODE_HALFOP;
+        if (*s == '+' || s[1] == '+' || s[2] == '+')
             fl |= MODE_VOICE;
         if (!keepnewmodes) 
         {
             if (fl & MODE_CHANOP)
+                fl = MODE_DEOPPED;
+            if (fl & MODE_HALFOP)
                 fl = MODE_DEOPPED;
             else
                 fl = 0;

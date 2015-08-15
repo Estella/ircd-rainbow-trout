@@ -28,11 +28,11 @@
 
 /* This file is hereby declared the nexus of all things ugly and preprocessed */
 
-static char rplisupport1[BUFSIZE];
-static char rplisupport2[BUFSIZE];
-static char rplisupportoper[BUFSIZE];
-static char rplversion[BUFSIZE];
-static char scratchbuf[BUFSIZE];
+static char rplisupport1[BUFSIZE+16];
+static char rplisupport2[BUFSIZE+4];
+static char rplisupportoper[BUFSIZE+4];
+static char rplversion[BUFSIZE+4];
+static char scratchbuf[BUFSIZE+92];
 
 /* send cached RPL_ISUPPORT */
 void send_rplisupport(aClient *acptr)
@@ -71,7 +71,7 @@ void build_rplcache(void)
     /* put MAXBANS and MAXCHANNELS first so better tokens override them */
     ircsprintf(scratchbuf,"NETWORK=%s SAFELIST MAXBANS=%i MAXCHANNELS=%i "
                "CHANNELLEN=%i KICKLEN=%i NICKLEN=%i TOPICLEN=%i MODES=%i "
-               "CHANTYPES=# CHANLIMIT=#:%i PREFIX=(ov)@+ STATUSMSG=@+",
+               "CHANTYPES=# CHANLIMIT=#:%i STATUSMSG=@+ PREFIX=(ohv)@%%+ ",
                Network_Name, MAXBANS, maxchannelsperuser, CHANNELLEN,
                TOPICLEN, NICKLEN, TOPICLEN, MAXMODEPARAMSUSER,
                maxchannelsperuser);

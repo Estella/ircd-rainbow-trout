@@ -750,10 +750,11 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		 * IF they haven't reached the max, or they're an oper */
 		status[i++]=(ac->user->away==NULL ? 'H' : 'G');
 		status[i]=(IsAnOper(ac) ? '*' : ((IsInvisible(ac) &&
-						  IsOper(sptr)) ? '%' : 0));
+						  IsOper(sptr)) ? '#' : 0));
 		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_CHANOP) ? '@'
+						 : ((cm->flags&CHFL_HALFOP) ? '%'
 						 : ((cm->flags&CHFL_VOICE) ? 
-						    '+' : 0));
+						    '+' : 0)));
 		status[++i]=0;
 		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   wsopts.channel->chname, ac->user->username,
@@ -783,7 +784,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    {
 		status[0]=(ac->user->away==NULL ? 'H' : 'G');
 		status[1]=(IsAnOper(ac) ? '*' : (IsInvisible(ac) &&
-						 IsAnOper(sptr) ? '%' : 0));
+						 IsAnOper(sptr) ? '#' : 0));
 		status[2]=0;
 		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   wsopts.show_chan ? first_visible_channel(ac, sptr)
@@ -822,9 +823,10 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		status[i++]=(ac->user->away==NULL ? 'H' : 'G');
 		status[i]=(IsAnOper(ac) ? '*' : ((IsInvisible(ac) &&
 						  IsOper(sptr)) ? '%' : 0));
-		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_CHANOP) ? 
-						 '@' : ((cm->flags&CHFL_VOICE)
-							? '+' : 0));
+		status[((status[i]) ? ++i : i)]=((cm->flags&CHFL_CHANOP) ? '@'
+ 						 : ((cm->flags&CHFL_HALFOP) ? '%'
+						 : ((cm->flags&CHFL_VOICE)
+							? '+' : 0)));
 		status[++i]=0;
 		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   lp->value.chptr->chname, ac->user->username,

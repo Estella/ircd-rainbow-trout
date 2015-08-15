@@ -840,6 +840,7 @@ struct User
     char       *server;        /* pointer to scached server name */
     unsigned int servicetype;  /* set by SVSMODE +T */
     unsigned long servicestamp; /* set by SVSMODE +d */
+    char       *account;	/* set by ACCOUNT (coded up based on an idea ported from ircu) */
     ServicesTag *servicestag;  /* set by SVSTAG */
     AliasInfo  *alias;         /* shortform alias data for U:lined clients */
     /*
@@ -1261,6 +1262,10 @@ struct Channel
 #define	CHFL_VOICE      0x0002	/* the power to speak */
 #define	CHFL_DEOPPED 	0x0004	/* deopped by us, modes need to be bounced */
 #define	CHFL_BANNED     0x0008  /* is banned */
+
+/* Extended channel flag modes */
+#define CHFL_HALFOP	0x200000 // Is a half operator, distinguishable by a %
+#define MODE_HALFOP	0x200000 // Is a half operator, distinguishable by a %
 
 /* ban mask types */
 
