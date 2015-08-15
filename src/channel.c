@@ -3415,19 +3415,19 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
             if (IsMember(who, chptr))
             {
-              if(is_chan_op(who, chptr) && !is_chan_op(sptr, chptr)) {
-              // In this case, we bail. - janicez
-                if (MyConnect(sptr))
-                {
-                    /* user on _my_ server, with no chanops.. so go away */
-                   sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
-                              me.name, parv[0], chptr->chname);
-                   sendto_one(who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only a halfop, so they failed.", me.name, parv[0], sptr->name, who->name);
-                   name = strtoken(&p, (char *) NULL, ",");
-                   user_count--;
-                   continue;
+                if(is_chan_op(who, chptr) && !is_chan_op(sptr, chptr)) {
+                    // In this case, we bail. - janicez
+
+                    if (MyConnect(sptr))
+                    {
+                        /* user on _my_ server, with no chanops.. so go away */
+                        sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+                                   me.name, parv[0], chptr->chname);
+                        sendto_one(who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only a halfop, so they failed.", me.name, parv[0], sptr->name, who->name);
+                        name = strtoken(&p, (char *) NULL, ",");
+                        continue;
+                    }
                 }
-              }
                 if((chptr->mode.mode & MODE_AUDITORIUM) && !is_chan_opvoice(who, chptr))
                 {
                     sendto_channelopvoice_butserv_me(chptr, sptr,

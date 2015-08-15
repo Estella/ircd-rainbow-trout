@@ -771,7 +771,6 @@ static int server_info[] =
     CONN_ZIP, 'Z',
     CONN_DKEY, 'E',
     CONN_HUB, 'H',
-    CONN_SSLCRYPT, 'X',
     0, 0
 };
 

@@ -88,7 +88,7 @@ int highest_fd = 0, resfd = -1;
 time_t timeofday;
 static struct sockaddr_in mysk;
 
-static struct sockaddr *connect_inet(aConnect *, aClient *, int *, int);
+static struct sockaddr *connect_inet(aConnect *, aClient *, int *);
 static int check_init(aClient *, char *);
 static void set_sock_opts(int, aClient *);
 
@@ -1905,7 +1905,7 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
     /* Copy these in so we have something for error detection. */
     strncpyzt(cptr->name, aconn->name, sizeof(cptr->name));
     strncpyzt(cptr->sockhost, aconn->host, HOSTLEN + 1);
-    svp = connect_inet(aconn, cptr, &len, ((aconn->flags&CONN_SSLCRYPT) != 0));
+    svp = connect_inet(aconn, cptr, &len);
 
     if (!svp)
     {
@@ -1971,7 +1971,7 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
 }
 
 static struct sockaddr *
-connect_inet(aConnect *aconn, aClient *cptr, int *lenp, int ssl)
+connect_inet(aConnect *aconn, aClient *cptr, int *lenp)
 {
     static union
     {
@@ -2104,24 +2104,6 @@ connect_inet(aConnect *aconn, aClient *cptr, int *lenp, int ssl)
     }
 
     *lenp = len;
-    if (ssl == 1) {
-      SetSSL(cptr);
-      set_non_blocking(cptr->fd, cptr);
-      set_sock_opts(cptr->fd, cptr);
-      SSL_set_fd(cptr->ssl, cptr->fd);
-      if (!safe_ssl_accept(cptr, cptr->fd)) {
-        // Server-Server SSL connection failed. Bail out.
-        report_error("SSL error connecting to %s:%s - bailing out of THAT connect attempt.", cptr);
-        SSL_set_shutdown(cptr->ssl, SSL_RECEIVED_SHUTDOWN);
-        ssl_smart_shutdown(cptr->ssl);
-        SSL_free(cptr->ssl);
-        ircstp->is_ref++;
-        cptr->fd = -2;
-        free_client(cptr);
-        close(cptr->fd);
-        return NULL;
-      }
-    }
     return (struct sockaddr *) &server;
 }
 
