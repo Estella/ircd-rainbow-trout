@@ -75,6 +75,7 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
         }
 
         mb = mode;
+        *mb++;
         for (cm = clink->value.chptr->members; cm; cm = cm->next) {
           sendto_one(cm->cptr, ":%s!%s@%s PART %s :--- Signed on (SVSHOST: %s) ---", cptr->name, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
           sendto_one(cm->cptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
