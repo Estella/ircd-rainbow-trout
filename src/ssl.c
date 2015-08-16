@@ -31,6 +31,7 @@
 #define SAFE_SSL_READ	1
 #define SAFE_SSL_WRITE	2
 #define SAFE_SSL_ACCEPT	3
+#define SAFE_SSL_CONNECT	4
 
 extern int errno;
 
@@ -52,13 +53,13 @@ int ssl_init()
     SSL_load_error_strings();
     SSLeay_add_ssl_algorithms();
     ircdssl_ctx = SSL_CTX_new(SSLv23_server_method());
+    ircdlinkssl_ctx = SSL_CTX_new(SSLv23_client_method());
 
     if(!ircdssl_ctx)
     {
 	ERR_print_errors_fp(stderr);
 	return 0;
     }
-    ircdlinkssl_ctx = SSL_CTX_new(SSLv23_client_method());
 
     if(!ircdlinkssl_ctx)
     {
@@ -102,7 +103,6 @@ int ssl_init()
     {
 	fprintf(stderr, "Server certificate does not match Server key");
 	SSL_CTX_free(ircdssl_ctx);
-	SSL_CTX_free(ircdlinkssl_ctx);
 	return 0;
     }
 
@@ -137,21 +137,11 @@ int ssl_rehash()
     if(ircdssl_ctx)
 	SSL_CTX_free(ircdssl_ctx);
 
-    if(ircdlinkssl_ctx)
-	SSL_CTX_free(ircdlinkssl_ctx);
-
     if(!(ircdssl_ctx = SSL_CTX_new(SSLv23_server_method())))
     {
-        disable_ssl(1);
+	disable_ssl(1);
 
-        return 0;
-    }
-
-    if(!(ircdlinkssl_ctx = SSL_CTX_new(SSLv23_client_method())))
-    {
-        disable_ssl(1);
-
-        return 0;
+	return 0;
     }
 
     if(SSL_CTX_use_certificate_file(ircdssl_ctx,
@@ -163,22 +153,6 @@ int ssl_rehash()
     }
 
     if(SSL_CTX_use_PrivateKey_file(ircdssl_ctx,
-		IRCDSSL_KPATH, SSL_FILETYPE_PEM) <= 0)
-    {
-	disable_ssl(1);
-
-	return 0;
-    }
-
-    if(SSL_CTX_use_certificate_file(ircdlinkssl_ctx,
-		IRCDSSL_CPATH, SSL_FILETYPE_PEM) <= 0)
-    {
-	disable_ssl(1);
-
-	return 0;
-    }
-
-    if(SSL_CTX_use_PrivateKey_file(ircdlinkssl_ctx,
 		IRCDSSL_KPATH, SSL_FILETYPE_PEM) <= 0)
     {
 	disable_ssl(1);
@@ -279,6 +253,33 @@ int safe_ssl_accept(aClient *acptr, int fd)
     return 1;
 }
 
+
+int safe_ssl_connect(aClient *acptr, int fd)
+{
+
+    int ssl_err;
+
+    if((ssl_err = SSL_connect(acptr->ssl)) <= 0)
+    {
+	switch(ssl_err = SSL_get_error(acptr->ssl, ssl_err))
+        {
+	    case SSL_ERROR_SYSCALL:
+		if(errno == EINTR || errno == EWOULDBLOCK
+			|| errno == EAGAIN)
+	    case SSL_ERROR_WANT_READ:
+	    case SSL_ERROR_WANT_WRITE:
+		    /* handshake will be completed later . . */
+		    return 1;
+	    default:
+		return fatal_ssl_error(ssl_err, SAFE_SSL_CONNECT, acptr);
+		
+	}
+	/* NOTREACHED */
+	return -1;
+    }
+    return 1;
+}
+
 int ssl_smart_shutdown(SSL *ssl) {
     char i;
     int rc;
@@ -310,6 +311,9 @@ static int fatal_ssl_error(int ssl_error, int where, aClient *sptr)
 	    break;
 	case SAFE_SSL_ACCEPT:
 	    ssl_func = "SSL_accept()";
+	    break;
+	case SAFE_SSL_CONNECT:
+	    ssl_func = "SSL_connect()";
 	    break;
 	default:
 	    ssl_func = "undefined SSL func [this is a bug] report to coders@dal.net";
