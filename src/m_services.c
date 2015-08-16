@@ -45,12 +45,11 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
     // Basically a "verbatim" rewrite of Charybdis' change_nick_user_host.
     // To be called AFTER the host is set.
     Link *clink;
+    chanMember *cm;
     char mode[10], modeval[NICKLEN * 8 + 9];
     char *mb = mode, *mvb = modeval;
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s PART %s :Signed on (SVSHOST: %s)", uname, clink->value.chptr->chname, cptr->user->host);
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb++ = 'a';
             strcat(mvb, uname);
@@ -76,7 +75,11 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
         }
 
         mb = mode;
-        if (mb[0] != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
+        for (cm = clink->value.chptr->members; cm; cm = cm->next) {
+          sendto_one(cm->cptr, ":%s!%s@%s PART %s :--- Signed on (SVSHOST: %s) ---", uname, cptr->name, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
+          sendto_one(cm->cptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
+          if (mb[0] != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
+        }
     }
 }
 
