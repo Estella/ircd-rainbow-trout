@@ -662,13 +662,13 @@ void sendto_channel_butone_local(aClient *one, aClient *from, aChannel *chptr,
 
         i = acptr->from->fd;
         if (MyClient(acptr)) 
-        {
+        {/*
             if(!didlocal)
             {
                 didlocal = prefix_buffer(0, from, pfix, sendbuf, 
                                          pattern, vl);
                 sbuf_begin_share(sendbuf, didlocal, &share_bufs[0]);
-            }
+            }*/
             if(check_fake_direction(from, acptr))
                     continue;
             
