@@ -1414,7 +1414,7 @@ aClient *add_connection(aListener *lptr, int fd)
     check_client_fd(acptr);
 
 #ifdef USE_SSL
-    if(IsSSL(lptr))
+    if(IsSSL(lptr) && acptr->ssl == NULL)
     {
         extern SSL_CTX *ircdssl_ctx;
 
