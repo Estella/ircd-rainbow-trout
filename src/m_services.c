@@ -52,7 +52,7 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s PART %s :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
-            *mb++ = 'a';
+            *mb = 'a';
             strcat(mvb, uname);
             strcat(mvb, " ");
         }
@@ -76,7 +76,7 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
         }
 
         mb = mode;
-        if (*mb != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
+        if (mb[0] != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
     }
 }
 
