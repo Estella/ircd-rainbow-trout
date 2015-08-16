@@ -1727,6 +1727,8 @@ void accept_connection(aListener *lptr)
             return;
         }
         ircstp->is_ac++;
+        sendto_realops_lev(CCONN_LEV,"New connection on fd %d (%s)",
+            newfd,get_listener_name(lptr));
 
         add_connection(lptr, newfd);
 #ifdef PINGNAZI
