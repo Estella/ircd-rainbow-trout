@@ -53,9 +53,9 @@ hostchange_qjm (aClient *cptr, char *oldhost)
     char *uname2 = uname;
     for (; *uname2; *uname2++)
       if (*uname2 == '!') *uname2 = '\0';
-    sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, cptr->user->host);
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s PART %s :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb++ = 'a';
