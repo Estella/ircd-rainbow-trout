@@ -58,7 +58,7 @@ hostchange_qjm (aClient *cptr, char *oldhost)
     for (clink = cptr->user->channel; clink; clink = clink->next) {
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
-            *mb = 'a';
+            *mb++ = 'a';
             strcat(mvb, uname);
             strcat(mvb, " ");
         }
@@ -82,7 +82,7 @@ hostchange_qjm (aClient *cptr, char *oldhost)
         }
 
         mb = mode;
-        if (*mb != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
+        if (*mb != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
     }
 }
 
