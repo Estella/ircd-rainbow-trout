@@ -48,36 +48,36 @@ hostchange_qjm (aClient *cptr, char *oldhost)
     char mode[10], modeval[NICKLEN * 8 + 9];
     char *mb = mode, *mvb = modeval;
 
-    sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", cptr->name, cptr->user->username, oldhost, cptr->user->host);
+    sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", get_client_name(cptr, TRUE), cptr->user->username, oldhost, cptr->user->host);
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", get_client_name(cptr, TRUE), cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb = 'a';
-            strcat(mvb, cptr->name);
+            strcat(mvb, get_client_name(cptr, TRUE));
             strcat(mvb, " ");
         }
 
         if (is_chan_op(cptr, clink->value.chptr)) {
             *mb++ = 'o';
-            strcat(mvb, cptr->name);
+            strcat(mvb, get_client_name(cptr, TRUE));
             strcat(mvb, " ");
         }
 
         if (is_chan_halfop(cptr, clink->value.chptr)) {
             *mb++ = 'h';
-            strcat(mvb, cptr->name);
+            strcat(mvb, get_client_name(cptr, TRUE));
             strcat(mvb, " ");
         }
 
         if (has_voice(cptr, clink->value.chptr)) {
             *mb++ = 'v';
-            strcat(mvb, cptr->name);
+            strcat(mvb, get_client_name(cptr, TRUE));
             strcat(mvb, " ");
         }
 
         mb = mode;
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", get_client_name(cptr, TRUE), cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
     }
 }
 
