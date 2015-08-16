@@ -1750,7 +1750,7 @@ int readwrite_client(aClient *cptr, int isread, int iswrite)
 #ifdef USE_SSL
     if(cptr->ssl && IsSSL(cptr) && !SSL_is_init_finished(cptr->ssl))
     {
-        if(IsDead(cptr) || !safe_ssl_accept(cptr, cptr->fd))
+        if(IsDead(cptr) || (IsConnecting(cptr)?!safe_ssl_connect(cptr, cptr->fd):!safe_ssl_accept(cptr, cptr->fd)) )
             close_connection(cptr);
         return 1;
     }
