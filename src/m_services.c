@@ -46,38 +46,43 @@ hostchange_qjm (aClient *cptr, char *oldhost)
     // To be called AFTER the host is set.
     Link *clink;
     char mode[10], modeval[NICKLEN * 8 + 9];
+    char ubuf[NICKLEN+HOSTLEN+NICKLEN+1], *uname=ubuf;
     char *mb = mode, *mvb = modeval;
 
-    sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", cptr->name, cptr->user->username, oldhost, cptr->user->host);
+    sprintf(uname, "%s", cptr->name);
+    char *uname2 = uname;
+    for (; *uname2; *uname2++)
+      if (*uname2 == '!') *uname2 = '\0';
+    sendto_common_channels_butfrom(cptr, ":%s!%s@%s QUIT :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, cptr->user->host);
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb = 'a';
-            strcat(mvb, cptr->name);
+            strcat(mvb, uname);
             strcat(mvb, " ");
         }
 
         if (is_chan_op(cptr, clink->value.chptr)) {
             *mb++ = 'o';
-            strcat(mvb, cptr->name);
+            strcat(mvb, uname);
             strcat(mvb, " ");
         }
 
         if (is_chan_halfop(cptr, clink->value.chptr)) {
             *mb++ = 'h';
-            strcat(mvb, cptr->name);
+            strcat(mvb, uname);
             strcat(mvb, " ");
         }
 
         if (has_voice(cptr, clink->value.chptr)) {
             *mb++ = 'v';
-            strcat(mvb, cptr->name);
+            strcat(mvb, uname);
             strcat(mvb, " ");
         }
 
         mb = mode;
-        if (*mb != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
+        if (*mb != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
     }
 }
 
