@@ -77,7 +77,7 @@ hostchange_qjm (aClient *cptr, char *oldhost)
         }
 
         mb = mode;
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
+        if (*mb != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, mvb);
     }
 }
 
