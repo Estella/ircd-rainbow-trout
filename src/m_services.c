@@ -40,20 +40,17 @@ int svspanic = 0; /* Services panic */
 int svsnoop = 0; /* Services disabled all o:lines (off by default) */
 
 void
-hostchange_qjm (aClient *cptr, char *oldhost, char *unameorig)
+hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
 {
     // Basically a "verbatim" rewrite of Charybdis' change_nick_user_host.
     // To be called AFTER the host is set.
     Link *clink;
     char mode[10], modeval[NICKLEN * 8 + 9];
     char *mb = mode, *mvb = modeval;
-    char uname[NICKLEN+1], rest[NICKLEN+HOSTLEN+5];
-
-    sscanf(unameorig, "%s!%s", &uname, &rest);
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s PART %s :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
-        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s PART %s :Signed on (SVSHOST: %s)", uname, clink->value.chptr->chname, cptr->user->host);
+        sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb++ = 'a';
             strcat(mvb, uname);
