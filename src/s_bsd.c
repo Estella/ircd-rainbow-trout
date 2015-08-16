@@ -88,7 +88,7 @@ int highest_fd = 0, resfd = -1;
 time_t timeofday;
 static struct sockaddr_in mysk;
 
-static struct sockaddr *connect_inet(aConnect *, aClient *, int *);
+static struct sockaddr *connect_inet(aConnect *, aClient *, int *, int);
 static int check_init(aClient *, char *);
 static void set_sock_opts(int, aClient *);
 
@@ -1905,7 +1905,7 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
     /* Copy these in so we have something for error detection. */
     strncpyzt(cptr->name, aconn->name, sizeof(cptr->name));
     strncpyzt(cptr->sockhost, aconn->host, HOSTLEN + 1);
-    svp = connect_inet(aconn, cptr, &len);
+    svp = connect_inet(aconn, cptr, &len, ((aconn->flags & CONN_SSL) != 0));
 
     if (!svp)
     {
@@ -1971,7 +1971,7 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
 }
 
 static struct sockaddr *
-connect_inet(aConnect *aconn, aClient *cptr, int *lenp)
+connect_inet(aConnect *aconn, aClient *cptr, int *lenp, int ssl)
 {
     static union
     {
@@ -2102,7 +2102,36 @@ connect_inet(aConnect *aconn, aClient *cptr, int *lenp)
             return NULL;
         }
     }
+    if (ssl) {
+        extern SSL_CTX *ircdlinkssl_ctx;
 
+        cptr->ssl = NULL;
+        if((cptr->ssl = SSL_new(ircdlinkssl_ctx)) == NULL)
+        {
+              sendto_realops_lev(DEBUG_LEV, "SSL creation of "
+                        "new SSL object failed [server %s]",
+                        cptr->sockhost);
+              ircstp->is_ref++;
+              cptr->fd = -2;
+              free_client(cptr);
+              return NULL;
+        }
+        SetSSL(cptr);
+        set_non_blocking(cptr->fd, cptr);
+        set_sock_opts(cptr->fd, cptr);
+        SSL_set_fd(cptr->ssl, cptr->fd);
+        if(!safe_ssl_connect(cptr, cptr->fd))
+        {
+            SSL_set_shutdown(cptr->ssl, SSL_RECEIVED_SHUTDOWN);
+            ssl_smart_shutdown(cptr->ssl);
+            SSL_free(cptr->ssl);
+            ircstp->is_ref++;
+            cptr->fd = -2;
+            free_client(cptr);
+            close(cptr->fd);
+            return NULL;
+        }
+    }
     *lenp = len;
     return (struct sockaddr *) &server;
 }

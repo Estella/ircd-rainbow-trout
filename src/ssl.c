@@ -35,6 +35,7 @@
 extern int errno;
 
 SSL_CTX *ircdssl_ctx;
+SSL_CTX *ircdlinkssl_ctx;
 int ssl_capable = 0;
 
 int ssl_init()
@@ -57,6 +58,13 @@ int ssl_init()
 	ERR_print_errors_fp(stderr);
 	return 0;
     }
+    ircdlinkssl_ctx = SSL_CTX_new(SSLv23_client_method());
+
+    if(!ircdlinkssl_ctx)
+    {
+	ERR_print_errors_fp(stderr);
+	return 0;
+    }
 
     if(SSL_CTX_use_certificate_file(ircdssl_ctx,
 		IRCDSSL_CPATH, SSL_FILETYPE_PEM) <= 0)
@@ -74,10 +82,27 @@ int ssl_init()
 	return 0;
     }
 
+    if(SSL_CTX_use_certificate_file(ircdlinkssl_ctx,
+		IRCDSSL_CPATH, SSL_FILETYPE_PEM) <= 0)
+    {
+	ERR_print_errors_fp(stderr);
+	SSL_CTX_free(ircdlinkssl_ctx);
+	return 0;
+    }
+
+    if(SSL_CTX_use_PrivateKey_file(ircdlinkssl_ctx,
+		IRCDSSL_KPATH, SSL_FILETYPE_PEM) <= 0)
+    {
+	ERR_print_errors_fp(stderr);
+	SSL_CTX_free(ircdlinkssl_ctx);
+	return 0;
+    }
+
     if(!SSL_CTX_check_private_key(ircdssl_ctx))
     {
 	fprintf(stderr, "Server certificate does not match Server key");
 	SSL_CTX_free(ircdssl_ctx);
+	SSL_CTX_free(ircdlinkssl_ctx);
 	return 0;
     }
 
@@ -112,11 +137,21 @@ int ssl_rehash()
     if(ircdssl_ctx)
 	SSL_CTX_free(ircdssl_ctx);
 
+    if(ircdlinkssl_ctx)
+	SSL_CTX_free(ircdlinkssl_ctx);
+
     if(!(ircdssl_ctx = SSL_CTX_new(SSLv23_server_method())))
     {
-	disable_ssl(1);
+        disable_ssl(1);
 
-	return 0;
+        return 0;
+    }
+
+    if(!(ircdlinkssl_ctx = SSL_CTX_new(SSLv23_client_method())))
+    {
+        disable_ssl(1);
+
+        return 0;
     }
 
     if(SSL_CTX_use_certificate_file(ircdssl_ctx,
@@ -128,6 +163,22 @@ int ssl_rehash()
     }
 
     if(SSL_CTX_use_PrivateKey_file(ircdssl_ctx,
+		IRCDSSL_KPATH, SSL_FILETYPE_PEM) <= 0)
+    {
+	disable_ssl(1);
+
+	return 0;
+    }
+
+    if(SSL_CTX_use_certificate_file(ircdlinkssl_ctx,
+		IRCDSSL_CPATH, SSL_FILETYPE_PEM) <= 0)
+    {
+	disable_ssl(1);
+
+	return 0;
+    }
+
+    if(SSL_CTX_use_PrivateKey_file(ircdlinkssl_ctx,
 		IRCDSSL_KPATH, SSL_FILETYPE_PEM) <= 0)
     {
 	disable_ssl(1);

@@ -565,11 +565,9 @@
 /*
  * USE_SSL - Add SSL support for users
  */
-#ifdef HAVE_ENCRYPTION_ON
                         #define USE_SSL
                         #define IRCDSSL_KPATH "ircd.key"
                         #define IRCDSSL_CPATH "ircd.crt"
-#endif
 
 /******************************************************************
  * STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP
