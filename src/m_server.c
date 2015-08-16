@@ -172,9 +172,10 @@ do_server_estab(aClient *cptr)
 
     fakelinkserver_update(cptr->name, cptr->info);
 
-    sendto_gnotice("from %s: Link with %s established, states:%s%s%s%s",
+    sendto_gnotice("from %s: Link with %s established, states:%s%s%s%s%s",
                    me.name, inpath, ZipOut(cptr) ? " Output-compressed" : "",
                    RC4EncLink(cptr) ? " encrypted" : "",
+                   IsSSL(cptr) ? " SSL" : "",
                    IsULine(cptr) ? " ULined" : "",
                    DoesTS(cptr) ? " TS" : " Non-TS");
 
@@ -186,7 +187,9 @@ do_server_estab(aClient *cptr)
 
     sendto_serv_butone(NULL, ":%s GNOTICE :Link with %s established: %s",
                        me.name, inpath,
-                       DoesTS(cptr) ? "TS link" : "Non-TS link!");
+                       DoesTS(cptr) ? "TS link" : "Non-TS link!",
+                       IsSSL(cptr) ? "SSL secured link :D" : "Non-SSL link! :( If this link is over the public Internet, please use SSL if at all posssible, or RC4 if the server is legacy."
+    );
 
     add_to_client_hash_table(cptr->name, cptr);
 
