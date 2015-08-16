@@ -1935,6 +1935,37 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
         return -1;
     }
     
+    if ((aconn->flags & CONN_SSL) != 0) {
+        extern SSL_CTX *ircdlinkssl_ctx;
+
+        cptr->ssl = NULL;
+        if((cptr->ssl = SSL_new(ircdlinkssl_ctx)) == NULL)
+        {
+              sendto_realops_lev(DEBUG_LEV, "SSL creation of "
+                        "new SSL object failed [server %s]",
+                        cptr->sockhost);
+              ircstp->is_ref++;
+              cptr->fd = -2;
+              free_client(cptr);
+              return NULL;
+        }
+        SetSSL(cptr);
+        set_non_blocking(cptr->fd, cptr);
+        set_sock_opts(cptr->fd, cptr);
+        SSL_set_fd(cptr->ssl, cptr->fd);
+        if(!safe_ssl_connect(cptr, cptr->fd))
+        {
+            SSL_set_shutdown(cptr->ssl, SSL_RECEIVED_SHUTDOWN);
+            ssl_smart_shutdown(cptr->ssl);
+            SSL_free(cptr->ssl);
+            ircstp->is_ref++;
+            cptr->fd = -2;
+            free_client(cptr);
+            close(cptr->fd);
+            return NULL;
+        }
+    }
+
     make_server(cptr);
     cptr->serv->aconn = aconn;
     
@@ -2098,36 +2129,6 @@ connect_inet(aConnect *aconn, aClient *cptr, int *lenp, int ssl)
         if (bind(cptr->fd, (struct sockaddr *) &sin, len) == -1)
         {
             report_error("error binding to local port for %s:%s", cptr);
-            close(cptr->fd);
-            return NULL;
-        }
-    }
-    if (ssl) {
-        extern SSL_CTX *ircdlinkssl_ctx;
-
-        cptr->ssl = NULL;
-        if((cptr->ssl = SSL_new(ircdlinkssl_ctx)) == NULL)
-        {
-              sendto_realops_lev(DEBUG_LEV, "SSL creation of "
-                        "new SSL object failed [server %s]",
-                        cptr->sockhost);
-              ircstp->is_ref++;
-              cptr->fd = -2;
-              free_client(cptr);
-              return NULL;
-        }
-        SetSSL(cptr);
-        set_non_blocking(cptr->fd, cptr);
-        set_sock_opts(cptr->fd, cptr);
-        SSL_set_fd(cptr->ssl, cptr->fd);
-        if(!safe_ssl_connect(cptr, cptr->fd))
-        {
-            SSL_set_shutdown(cptr->ssl, SSL_RECEIVED_SHUTDOWN);
-            ssl_smart_shutdown(cptr->ssl);
-            SSL_free(cptr->ssl);
-            ircstp->is_ref++;
-            cptr->fd = -2;
-            free_client(cptr);
             close(cptr->fd);
             return NULL;
         }
