@@ -40,17 +40,16 @@ int svspanic = 0; /* Services panic */
 int svsnoop = 0; /* Services disabled all o:lines (off by default) */
 
 void
-hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
+hostchange_qjm (aClient *cptr, char *oldhost, char *unameorig)
 {
     // Basically a "verbatim" rewrite of Charybdis' change_nick_user_host.
     // To be called AFTER the host is set.
     Link *clink;
     char mode[10], modeval[NICKLEN * 8 + 9];
     char *mb = mode, *mvb = modeval;
-    char *unb = uname;
+    char uname[NICKLEN+1], rest[NICKLEN+HOSTLEN+5];
 
-    for (; *unb; unb++)
-        if (*unb == '!') *unb = '\0';
+    sscanf(unameorig, "%s!%s", &uname, &rest);
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s PART %s :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
