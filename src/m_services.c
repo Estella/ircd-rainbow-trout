@@ -46,7 +46,6 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
     // To be called AFTER the host is set.
     Link *clink;
     char mode[10], modeval[NICKLEN * 8 + 9];
-    char ubuf[NICKLEN+HOSTLEN+NICKLEN+1], *uname=ubuf;
     char *mb = mode, *mvb = modeval;
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
