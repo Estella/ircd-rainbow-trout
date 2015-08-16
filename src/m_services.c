@@ -47,12 +47,16 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
     Link *clink;
     char mode[10], modeval[NICKLEN * 8 + 9];
     char *mb = mode, *mvb = modeval;
+    char *unb = uname;
+
+    for (; *unb; unb++)
+        if (*unb == '!') *unb = '\0';
 
     for (clink = cptr->user->channel; clink; clink = clink->next) {
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s PART %s :Signed on (SVSHOST: %s)", uname, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
         sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s JOIN %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
         if (is_chan_superop(cptr, clink->value.chptr)) {
-            *mb = 'a';
+            *mb++ = 'a';
             strcat(mvb, uname);
             strcat(mvb, " ");
         }
