@@ -25,7 +25,7 @@ void bircmodule_check(int modulever) {
   modulever = 1008;
 }
 
-void bircmodule_modinfo(char *modver, char *description) {
+void bircmodule_getinfo(char *modver, char *description) {
   modver = "1.0alpha1";
   description = "Provides channel services to a network running IRCd-rainbow-trout";
 }
