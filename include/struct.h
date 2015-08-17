@@ -1119,6 +1119,33 @@ struct SAliasInfo
 #define MF_RIDLE    0x0002  /* reset idle time */
 #define MF_ALIAS    0x0004  /* aliastab index valid */
 
+#ifdef USE_NEW_COMMAND_SYSTEM
+// Pseudo-user command table structure
+struct PuCommand
+{
+  char *cmd; // command
+  int (*func)(); // callback function takes cptr, sptr, args
+  UT_hash_handle hh;
+};
+
+// Pseudo-user table structure - used for built-in services/chanfixes
+struct PUser
+{
+  char *nick; // is a nickname for the pseudouser
+  char *user; // user@
+  char *host; // host
+  struct PuCommand *cmds; // points to a PuCommand
+  UT_hash_handle hh;
+};
+
+extern struct PUser *pusers;
+extern int create_puser(char *, char *, char *);
+extern int delete_puser(char *);
+extern int puser_add_cb(char *, char *, int (*func)());
+extern int puser_del_cb(char *, char *);
+
+#endif // USE_NEW_COMMAND_SYSTEM
+
 /* Message table structure */
 struct Message
 {

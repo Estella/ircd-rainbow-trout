@@ -343,6 +343,8 @@ int parse(aClient *cptr, char *buffer, char *bufend)
 	if (s)
 	    *s++ = '\0';
 	
+        char *t = ch;
+        for (; *t; *t++) *t = ToUpper(*t);
 #ifndef USE_NEW_COMMAND_SYSTEM
 	mptr = tree_parse(ch);
 #else

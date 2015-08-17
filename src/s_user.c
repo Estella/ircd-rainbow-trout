@@ -114,6 +114,12 @@ void        free_fluders(aClient *, aChannel *);
 void        free_fludees(aClient *);
 #endif
 
+struct PUser *pusers = NULL;
+int create_puser(char *, char *, char *);
+int delete_puser(char *);
+int puser_add_cb(char *, char *, int (*func)());
+int puser_del_cb(char *, char *);
+
 #ifdef ANTI_SPAMBOT
 int         spam_time = MIN_JOIN_LEAVE_TIME;
 int         spam_num = MAX_JOIN_LEAVE_COUNT;
@@ -125,6 +131,54 @@ int         spam_num = MAX_JOIN_LEAVE_COUNT;
 #define CTCP_DCC        2
 #define CTCP_DCCSEND    3
 
+// Pseudouser callback systems.
+/*
+ * Good lordy, this is a shitty system that could be seriously abused... :|
+ * ~janicez
+ */
+
+int create_puser(char *n, char *u, char *h) {
+  struct PUsers *pu, *npu = MyMalloc(sizeof(struct PUsers));
+  HASH_FIND_STR(pusers, n, pu);
+  if (pu != NULL) delete_puser(n); // Delete if already in existence
+  pu->nick = n;
+  pu->user = u;
+  pu->host = h;
+  pu->cmds = (struct PuCommand *)MyMalloc(sizeof(struct PuCommand));
+  sendto_serv_butone(NULL, "NICK %s 1 0 +io %s %s %s 0 0 :IRCd pseudo user", n, u, h, me.name);
+  HASH_ADD_KEYPTR(hh, pusers, pu->nick, strlen(pu->nick), pu);
+  return 0;
+}
+
+int delete_puser(char *n) {
+  struct PUsers *pu;
+  HASH_FIND_STR(pusers, n, pu);
+  if (pu != NULL) HASH_DEL(pusers, pu);
+  sendto_serv_butone(NULL, ":%s QUIT :Pseudo-user deleted", pu->nick);
+  MyFree(pu->cmds);
+  MyFree(pu);
+  return 0;
+}
+
+int puser_add_cb(char *n, char *comd, int (*func)()) {
+  struct PUsers *pu;
+  struct PuCommand *pc;
+  pc->cmd = comd;
+  pc->func = &func;
+  HASH_FIND_STR(pusers, n, pu);
+  if (pu == NULL) return 1; // this only happens with poorly coded programs
+  HASH_ADD_KEYPTR(hh, pu->cmds, pc->cmd, strlen(pc->cmd), pc);
+  return 0;
+}
+
+int puser_del_cb(char *n, char *comd) {
+  struct PUsers *pu;
+  struct PuCommand *pc;
+  HASH_FIND_STR(pusers, n, pu);
+  HASH_FIND_STR(pu->cmds, comd, pc);
+  if (pc != NULL) HASH_DEL(pu->cmds, pc);
+  return 0;
+}
 
 /*
  * cptr:
@@ -1496,6 +1550,8 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
 {
     aClient *acptr;
     aChannel *chptr;
+    struct PUser *pu;
+    struct PuCommand *pc;
     char *cmd;
     int ismine;
     int ret;
@@ -1568,6 +1624,21 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
                 break;
             s++;
         }
+
+#ifdef USE_NEW_COMMAND_SYSTEM
+        HASH_FIND_STR(pusers, target, pu);
+        if (pu != NULL) {
+            char *x, *comd = strdup(parv[2]);
+            x = comd;
+            for (; *x; *x++) if (*x == ' ') {
+                *x = '\0';
+                *x++;
+            }
+            HASH_FIND_STR(pu->cmds, comd, pc);
+            (*pc->func)(cptr, sptr, x);
+            continue;
+        }
+#endif // USE_NEW_COMMAND_SYSTEM
 
         /* target is a channel */
         if (IsChannelName(s))
@@ -2168,6 +2239,10 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
     
     if (!MyConnect(sptr))
     {
+        sendto_realops_lev(CCONN_LEV, "Client connecting: %s (%s@%s) [%s] %s",
+                           nick, user->username, user->host, sptr->hostip,
+                           "Remote");
+
         user->server = find_or_add(server);
         strncpyzt(user->host, host, sizeof(user->host));
     } 
