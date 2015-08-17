@@ -500,4 +500,5 @@ extern MESSAGE_TREE *msg_tree_root;
 #endif
 #endif
 #endif
+extern void delcommand(char *);
 #endif /* __msg_include__  */

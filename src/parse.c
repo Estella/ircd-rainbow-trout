@@ -68,6 +68,12 @@ struct Message *msgstruct(char *message, int (*func)(), short maxpara, short flg
   return msg;
 }
 
+void delcommand(char *command) {
+  struct Message *msg = NULL;
+  HASH_FIND_STR(msgtab, command, msg);
+  if (msg != NULL) HASH_DEL(msgtab, msg);
+}
+
 void init_functab(void) {
     msgstruct(MSG_PRIVATE,   &m_private,   MAXPARA,  MF_RIDLE,  0);
     msgstruct(MSG_NICK,      &m_nick,      MAXPARA,  MF_UNREG,  0);
