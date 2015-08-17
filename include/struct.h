@@ -42,6 +42,10 @@
 #include <sys/time.h>
 #endif
 
+#ifdef USE_NEW_COMMAND_SYSTEM
+#include <uthash.h>
+#endif
+
 #ifdef USE_SYSLOG
 #include <syslog.h>
 #if defined( HAVE_SYS_SYSLOG_H )
@@ -1125,6 +1129,9 @@ struct Message
     int              aliasidx;      /* aliastab index */
     unsigned int     count;         /* number of times used */
     unsigned long    bytes;         /* number of bytes used */
+#ifdef USE_NEW_COMMAND_SYSTEM
+    UT_hash_handle   hh;            /* Hash handle, used for new-command-system */
+#endif // USE_NEW_COMMAND_SYSTEM
 };
 
 typedef struct msg_tree 

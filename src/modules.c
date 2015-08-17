@@ -515,7 +515,7 @@ get_texthooktype(enum c_hooktype hooktype)
             return "Post-MOTD";
 
         case CHOOK_MSG:
-            return "Message";
+            return "Message to potentially non-existent user";
 
         case CHOOK_CHANMSG:
             return "Channel Message";
@@ -764,13 +764,14 @@ call_hooks(enum c_hooktype hooktype, ...)
             {
                 aClient *acptr = va_arg(vl, aClient *);
                 int aint = va_arg(vl, int);
+                char *targptr = va_arg(vl, char *);
                 char *txtptr = va_arg(vl, char *);
 
                 for(lp = msg_hooks; lp; lp = lp->next)
                 {
-                    int (*rfunc) (aClient *, int, char *) = 
+                    int (*rfunc) (aClient *, int, char *, char *) = 
                                     ((aHook *)lp->value.cp)->funcptr;
-                    if((ret = (*rfunc)(acptr, aint, txtptr)) == FLUSH_BUFFER)
+                    if((ret = (*rfunc)(acptr, aint, targptr, txtptr)) == FLUSH_BUFFER)
                         break;
                 }
                 break;

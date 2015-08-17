@@ -74,7 +74,7 @@ enum c_hooktype {
 extern int call_hooks(enum c_hooktype hooktype, ...);
 extern int init_modules();
 
-#define MODULE_INTERFACE_VERSION 1007 /* the interface version (hooks, modules.c commands, etc) */
+#define MODULE_INTERFACE_VERSION 1008 /* the interface version (hooks, modules.c commands, etc) */
 
 #ifdef BIRCMODULE
 extern void *bircmodule_add_hook(enum c_hooktype, void *, void *);

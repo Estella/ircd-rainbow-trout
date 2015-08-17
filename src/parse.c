@@ -23,7 +23,9 @@
 #include "sys.h"
 #include "numeric.h"
 #include "h.h"
+#ifndef USE_NEW_COMMAND_SYSTEM
 #define MSGTAB
+#endif
 #include "msg.h"
 #undef MSGTAB
 #include "memcount.h"
@@ -47,6 +49,146 @@ static struct Message *do_msg_tree(MESSAGE_TREE *, char *, struct Message *);
 static struct Message *tree_parse(char *);
 
 int num_msg_trees = 0;
+
+#ifdef USE_NEW_COMMAND_SYSTEM
+#warning "The IRCd will be in an unpredictable state on start due to USE_NEW_COMMAND_SYSTEM."
+#warning "USE_NEW_COMMAND_SYSTEM is an experimental new feature that permits modules to introduce commands."
+#define NEWMSGTAB
+#include "msg.h"
+
+struct Message *msgtab = NULL;
+struct Message *msgstruct(char *message, int (*func)(), short maxpara, short flgs, int atab_pos) {
+  struct Message *msg = (struct Message *)MyMalloc(sizeof(struct Message));
+  msg->cmd = message;
+  msg->func = &func;
+  msg->parameters = maxpara;
+  msg->flags = flgs;
+  msg->aliasidx = atab_pos;
+  return msg;
+}
+
+void init_functab(void) {
+    add_msg(msgstruct(MSG_PRIVATE,   &m_private,   MAXPARA,  MF_RIDLE,  0));
+    add_msg(msgstruct(MSG_NICK,      &m_nick,      MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_NOTICE,    &m_notice,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_JOIN,      &m_join,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_MODE,      &m_mode,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SAMODE,    &m_samode,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SAJOIN,    &m_sajoin,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_QUIT,      &m_quit,      MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_PART,      &m_part,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_TOPIC,     &m_topic,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_INVITE,    &m_invite,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_KICK,      &m_kick,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_WALLOPS,   &m_wallops,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_LOCOPS,    &m_locops,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_PONG,      &m_pong,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_PING,      &m_ping,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_ERROR,     &m_error,     MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_KILL,      &m_kill,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_USER,      &m_user,      MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_AWAY,      &m_away,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_ISON,      &m_ison,            1,  0,         0));
+    add_msg(msgstruct(MSG_SERVER,    &m_server,    MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_SQUIT,     &m_squit,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_WHOIS,     &m_whois,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_WHO,       &m_who,       MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_WHOWAS,    &m_whowas,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_LIST,      &m_list,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_NAMES,     &m_names,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_USERHOST,  &m_userhost,        1,  0,         0));
+    add_msg(msgstruct(MSG_USERIP,    &m_userip,          1,  0,         0));
+    add_msg(msgstruct(MSG_TRACE,     &m_trace,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_PASS,      &m_pass,      MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_LUSERS,    &m_lusers,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_TIME,      &m_time,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_OPER,      &m_oper,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_CONNECT,   &m_connect,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_VERSION,   &m_version,   MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_STATS,     &m_stats,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_LINKS,     &m_links,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_ADMIN,     &m_admin,     MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_USERS,     &m_users,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_HELP,      &m_help,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_INFO,      &m_info,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_MOTD,      &m_motd,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVINFO,    &m_svinfo,    MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_SJOIN,     &m_sjoin,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_GLOBOPS,   &m_globops,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_CHATOPS,   &m_chatops,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_GOPER,     &m_goper,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_GNOTICE,   &m_gnotice,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_CLOSE,     &m_close,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_KLINE,     &m_kline,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_UNKLINE,   &m_unkline,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_HASH,      &m_hash,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_DNS,       &m_dns,       MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_REHASH,    &m_rehash,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_RESTART,   &m_restart,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_DIE,       &m_die,       MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SET,       &m_set,       MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_CHANSERV,  &m_aliased,         1,  MF_ALIAS,  AII_CS));
+    add_msg(msgstruct(MSG_NICKSERV,  &m_aliased,         1,  MF_ALIAS,  AII_NS));
+    add_msg(msgstruct(MSG_MEMOSERV,  &m_aliased,         1,  MF_ALIAS,  AII_MS));
+    add_msg(msgstruct(MSG_ROOTSERV,  &m_aliased,         1,  MF_ALIAS,  AII_RS));
+    add_msg(msgstruct(MSG_OPERSERV,  &m_aliased,         1,  MF_ALIAS,  AII_OS));
+    add_msg(msgstruct(MSG_STATSERV,  &m_aliased,         1,  MF_ALIAS,  AII_SS));
+    add_msg(msgstruct(MSG_HELPSERV,  &m_aliased,         1,  MF_ALIAS,  AII_HS));
+    add_msg(msgstruct(MSG_SERVICES,  &m_services,        1,  0,         0));
+    add_msg(msgstruct(MSG_IDENTIFY,  &m_identify,        1,  0,         0));
+    add_msg(msgstruct(MSG_SVSNICK,   &m_svsnick,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSKILL,   &m_svskill,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSMODE,   &m_svsmode,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSHOLD,   &m_svshold,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_AKILL,     &m_akill,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_RAKILL,    &m_rakill,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SILENCE,   &m_silence,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_WATCH,     &m_watch,           1,  0,         0));
+    add_msg(msgstruct(MSG_DCCALLOW,  &m_dccallow,        1,  0,         0));
+    add_msg(msgstruct(MSG_SQLINE,    &m_sqline,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_UNSQLINE,  &m_unsqline,  MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_CAPAB,     &m_capab,     MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_BURST,     &m_burst,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SGLINE,    &m_sgline,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_UNSGLINE,  &m_unsgline,  MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_DKEY,      &m_dkey,      MAXPARA,  MF_UNREG,  0));
+    add_msg(msgstruct(MSG_NS,        &m_aliased,         1,  MF_ALIAS,  AII_NS));
+    add_msg(msgstruct(MSG_CS,        &m_aliased,         1,  MF_ALIAS,  AII_CS));
+    add_msg(msgstruct(MSG_MS,        &m_aliased,         1,  MF_ALIAS,  AII_MS));
+    add_msg(msgstruct(MSG_RS,        &m_aliased,         1,  MF_ALIAS,  AII_RS));
+    add_msg(msgstruct(MSG_OS,        &m_aliased,         1,  MF_ALIAS,  AII_OS));
+    add_msg(msgstruct(MSG_SS,        &m_aliased,         1,  MF_ALIAS,  AII_SS));
+    add_msg(msgstruct(MSG_HS,        &m_aliased,         1,  MF_ALIAS,  AII_HS));
+    add_msg(msgstruct(MSG_RESYNCH,   &m_resynch,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_MODULE,    &m_module,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_RWHO,      &m_rwho,      MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSCLONE,  &m_svsclone,  MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSPANIC,  &m_svspanic,  MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_CHANKILL,  &m_chankill,  MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSHOST,   &m_svshost,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSNOOP,   &m_svsnoop,   MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_SVSTAG,    &m_svstag,    MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_PUT,       &m_put,       2,        MF_UNREG,  0));
+    add_msg(msgstruct(MSG_POST,      &m_post,      2,        MF_UNREG,  0));
+    add_msg(msgstruct(MSG_CHECK,     &m_check,     MAXPARA,  0,         0));
+    add_msg(msgstruct(MSG_LUSERSLOCK,  &m_luserslock,  MAXPARA,  0,        0));
+    add_msg(msgstruct(MSG_LINKSCONTROL,  &m_linkscontrol,  MAXPARA,  0,       0));
+    add_msg(msgstruct(MSG_WEBIRC,    &m_webirc,    MAXPARA,  MF_UNREG,  0));
+}
+
+#undef NEWMSGTAB
+#endif
+AliasInfo aliastab[] =
+{
+    /* AII_NS */ {MSG_NS, NICKSERV, Services_Name},
+    /* AII_CS */ {MSG_CS, CHANSERV, Services_Name},
+    /* AII_MS */ {MSG_MS, MEMOSERV, Services_Name},
+    /* AII_RS */ {MSG_RS, ROOTSERV, Services_Name},
+    /* AII_OS */ {MSG_OS, OPERSERV, Stats_Name},
+    /* AII_SS */ {MSG_SS, STATSERV, Stats_Name},
+    /* AII_HS */ {MSG_HS, HELPSERV, Stats_Name},
+    { 0 }
+};
 
 /*
  * parse a buffer.
@@ -194,7 +336,11 @@ int parse(aClient *cptr, char *buffer, char *bufend)
 	if (s)
 	    *s++ = '\0';
 	
+#ifndef USE_NEW_COMMAND_SYSTEM
 	mptr = tree_parse(ch);
+#else
+        HASH_FIND_STR(msgtab, ch, mptr);
+#endif
 	
 	if (!mptr || !mptr->cmd) 
 	{
@@ -319,6 +465,8 @@ static int mcmp(struct Message *m1, struct Message *m2)
 {
     return strcmp(m1->cmd, m2->cmd);
 }
+
+#ifndef USE_NEW_COMMAND_SYSTEM
 
 /* Initialize the msgtab parsing tree -orabidoo */
 void init_tree_parse(struct Message *mptr)
@@ -447,6 +595,8 @@ static struct Message *tree_parse(char *cmd)
     }
     return ((struct Message *) NULL);
 }
+
+#endif // USE_NEW_COMMAND_SYSTEM
 
 /* field breakup for ircd.conf file. */
 char *getfield(char *newline)
@@ -626,11 +776,14 @@ memcount_parse(MCparse *mc)
 {
     mc->file = __FILE__;
 
+#ifndef USE_NEW_COMMAND_SYSTEM
     mc->msgnodes.m = r_msgtree_memcount(msg_tree_root, &mc->msgnodes.c);
 
     mc->total.c += mc->msgnodes.c;
     mc->total.m += mc->msgnodes.m;
-
+#else
+    mc->total.m += 1;
+#endif
     mc->s_bufs.c++;
     mc->s_bufs.m += sizeof(para);
     mc->s_bufs.c++;

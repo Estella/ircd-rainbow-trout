@@ -834,7 +834,11 @@ main(int argc, char *argv[])
     initlists();
     initwhowas();
     initstats();
+#ifdef USE_NEW_COMMAND_SYSTEM
+    init_functab();
+#else
     init_tree_parse(msgtab);
+#endif
     init_send();
     open_debugfile();
     NOW = time(NULL);

@@ -1536,10 +1536,10 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             return 0;
         }
 
-        if (call_hooks(CHOOK_MSG, sptr, notice, parv[2]) == FLUSH_BUFFER)
-            return FLUSH_BUFFER;
-
         parv[1] = canonize(parv[1]);
+
+        if (call_hooks(CHOOK_MSG, sptr, notice, parv[1], parv[2]) == FLUSH_BUFFER)
+            return FLUSH_BUFFER;
     }
 
     /* loop on comma-separated targets, until tleft is gone */
