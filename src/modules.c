@@ -250,7 +250,7 @@ load_module(aClient *sptr, char *modname)
                     (void *) &tmpmod.module_globalcommand))
         return -1;
 
-    (*tmpmod.module_check)(&acsz);
+    /*(*tmpmod.module_check)(&acsz);
     if(acsz != MODULE_INTERFACE_VERSION)
     {
         if(sptr)
@@ -264,7 +264,7 @@ load_module(aClient *sptr, char *modname)
                     modname, MODULE_INTERFACE_VERSION, acsz);
         dlclose(tmpmod.handle);
         return -1;
-    }
+    }*/ // Admin knows best -- janicez
 
     tmpmod.name = bircmodule_strdup(modname);
 
