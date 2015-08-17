@@ -35,11 +35,18 @@ int bircmodule_init(void *opaque) {
   return 1; // Bail because we're not USE_NEW_COMMAND_SYSTEM enabled and thus not modular.
 #endif
   msgstruct("42", m_test, MAXPARA, 0, 0);
-  bircmodule_add_hook(MHOOK_UNLOAD, opaque, module_unload);
   return 0;
 }
 
-void module_unload(void) {
+int bircmodule_globalcommand(void) {
+  return 0;
+}
+
+int bircmodule_command(void) {
+  return 0;
+}
+
+void bircmodule_shutdown(void) {
   // Kill the 42 command or whatever it was ;p
   delcommand("42");
 }
