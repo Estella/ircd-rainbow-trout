@@ -24,6 +24,6 @@
 #define MINOR 0
 #define PATCH 7
 
-#define PATCHES ""
+#define PATCHES "+ircd-rainbow-trout(1.0.0alpha2)"
 
 #endif

@@ -120,6 +120,9 @@ char *infotext[] =
 	 "Thanks also to those who provide the kind sys admins who let me and",
 	 "others continue to develop IRC.",
 	 "",
+	 "You are currently using a modified version of bahamut called ircd-rainbow-trout.",
+	 "Features in this IRCd may not reflect those in bahamut.",
+	 "",
 	 0,
 };
 !SUB!THIS!

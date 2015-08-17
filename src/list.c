@@ -223,7 +223,7 @@ void free_client(aClient *cptr)
 	 */
 	sendto_ops("list.c couldn't BlockHeapFree(free_remote_aClients,cptr) "
 		   "cptr = %p", cptr);
-	sendto_ops("Please report to the bahamut team! "
+	sendto_ops("Please report to the Rainbow Trout IRCd team! "
 		   "coders@dal.net");
 	abort();
 #if defined(USE_SYSLOG) && defined(SYSLOG_BLOCK_ALLOCATOR)
@@ -261,7 +261,7 @@ void free_channel(aChannel *chan)
     if (BlockHeapFree(free_channels, chan)) {
 	sendto_ops("list.c couldn't BlockHeapFree(free_channels,chan) "
 		   "chan = %p", chan);
-	sendto_ops("Please report to the bahamut team!");
+	sendto_ops("Please report to the Rainbow Trout IRCd team!");
     }
 }
 
@@ -338,8 +338,8 @@ void free_user(anUser *user, aClient *cptr)
     {
 	sendto_ops("list.c couldn't BlockHeapFree(free_anUsers,user) "
 		   "user = %p", user);
-	sendto_ops("Please report to the bahamut team! "
-		   "bahamut-bugs@bahamut.net");
+	sendto_ops("Please report to the Rainbow Trout IRCd team! "
+		   "https://github.com/asterIRC/ircd-rainbow-trout");
 #if defined(USE_SYSLOG) && defined(SYSLOG_BLOCK_ALLOCATOR)
 	syslog(LOG_DEBUG, "list.c couldn't BlockHeapFree(free_anUsers,user) "
 	       "user = %p", user);
@@ -483,7 +483,7 @@ void free_link(Link *lp)
     if (BlockHeapFree(free_Links, lp)) {
 	sendto_ops("list.c couldn't BlockHeapFree(free_Links,lp) lp = %p",
 		   lp);
-	sendto_ops("Please report to the bahamut team!");
+	sendto_ops("Please report to the Rainbow Trout IRCd team!");
     }
 }
 
@@ -517,7 +517,7 @@ void free_dlink(DLink *lp)
     if (BlockHeapFree(free_DLinks, lp)) {
 	sendto_ops("list.c couldn't BlockHeapFree(free_DLinks,lp) lp = %p",
 		   lp);
-	sendto_ops("Please report to the bahamut team!");
+	sendto_ops("Please report to the Rainbow Trout IRCd team!");
     }
 }
 
@@ -536,7 +536,7 @@ void free_chanmember(chanMember *mp)
     if (BlockHeapFree(free_chanMembers, mp)) {
 	sendto_ops("list.c couldn't BlockHeapFree(free_chanMembers,mp) "
 		   "mp = %p", mp);
-	sendto_ops("Please report to the bahamut team!");
+	sendto_ops("Please report to the Rainbow Trout IRCd team!");
     }
 }
 

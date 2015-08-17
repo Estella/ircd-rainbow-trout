@@ -168,7 +168,7 @@ static void build_version(void)
 {
     char *s=PATCHES;
     if(*s != 0)
-        sprintf(version, "%s-%d.%d.%d-%s", BASENAME, MAJOR, MINOR, PATCH, PATCHES);
+        sprintf(version, "%s(%d.%d.%d)%s", BASENAME, MAJOR, MINOR, PATCH, PATCHES);
     else
         sprintf(version, "%s-%d.%d.%d", BASENAME, MAJOR, MINOR, PATCH);
 }
@@ -666,8 +666,9 @@ main(int argc, char *argv[])
     build_version();
 
     printf("\n%s booting...\n", version);
-    printf("Security related issues should be sent to coders@dal.net\n");
-    printf("All other issues should be sent to dalnet-src@dal.net\n\n");
+    printf("Security related issues should be sent to janicez@umbrellix.tk\n");
+    printf("All other issues should be reported at https://github.com/asterIRC/ircd-rainbow-trout\n\n");
+    printf("This is a modified IRCd. Features may not reflect those of upstream.");
 
     setup_corefile();
 
@@ -1195,6 +1196,7 @@ void io_loop()
          * will lag.
      * htm doesnt exist anymore, but this comment was funny, so i
      * left it in. -epi
+     * htm STILL doesn't exist, and janicez also approves of this comment.
          */
         
         /* Now we've made this call a bit smarter. */
