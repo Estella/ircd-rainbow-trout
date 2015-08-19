@@ -37,20 +37,20 @@ static char scratchbuf[BUFSIZE+92];
 /* send cached RPL_ISUPPORT */
 void send_rplisupport(aClient *acptr)
 {
-    sendto_one(acptr, rplisupport1, acptr->name);
-    sendto_one(acptr, rplisupport2, acptr->name);
+  sendto_one(&me, acptr, rplisupport1, acptr->name);
+  sendto_one(&me, acptr, rplisupport2, acptr->name);
 }
 
 /* send cached RPL_ISUPPORT for oper limits */
 void send_rplisupportoper(aClient *acptr)
 {
-    sendto_one(acptr, rplisupportoper, acptr->name);
+  sendto_one(&me, acptr, rplisupportoper, acptr->name);
 }
 
 /* send cached RPL_VERSION */
 void send_rplversion(aClient *acptr)
 {
-    sendto_one(acptr, rplversion, acptr->name);
+  sendto_one(&me, acptr, rplversion, acptr->name);
 }
 
 

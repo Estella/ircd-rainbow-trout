@@ -103,7 +103,7 @@ void report_fds(aClient *cptr)
          blocking = "-";
       }
 
-      sendto_one(cptr, ":%s %d %s :%d - %s [%s] %s %s",
+    sendto_one(&me, cptr, ":%s %d %s :%d - %s [%s] %s %s",
                  me.name, RPL_STATSDEBUG, cptr->name,
                  i, type_string(fd_list[i].type),
                  flags_string(fd_list[i].flags),

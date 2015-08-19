@@ -170,7 +170,7 @@ m_squit(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsPrivileged(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -216,7 +216,7 @@ m_squit(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!acptr) 
     {
-        sendto_one(sptr, err_str(ERR_NOSUCHSERVER),
+      sendto_one(&me, sptr, err_str(ERR_NOSUCHSERVER),
                    me.name, parv[0], server);
         return 0;
     }
@@ -224,7 +224,7 @@ m_squit(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (MyClient(sptr) && ((!OPCanGRoute(sptr) && !MyConnect(acptr)) || 
                            (!OPCanLRoute(sptr) && MyConnect(acptr)))) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -278,7 +278,7 @@ m_squit(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     sendto_realops_lev(DEBUG_LEV, "Passing along SQUIT for %s by %s [%s]",
                        acptr->name, sptr->name, comment);
-    sendto_one(acptr->from, ":%s SQUIT %s :%s", parv[0], acptr->name, comment);
+  sendto_one(&me, acptr->from, ":%s SQUIT %s :%s", parv[0], acptr->name, comment);
 
     return 0;
 }
@@ -410,7 +410,7 @@ m_info(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if (!IsAnOper(sptr)) 
             {
                 if (IsSquelch(sptr)) {
-                    sendto_one(sptr, rpl_str(RPL_ENDOFINFO), me.name, parv[0]);
+                  sendto_one(&me, sptr, rpl_str(RPL_ENDOFINFO), me.name, parv[0]);
                     return 0;
                 }
                 if (!MyConnect(sptr))
@@ -422,21 +422,21 @@ m_info(aClient *cptr, aClient *sptr, int parc, char *parv[])
             }
         }
         while (*text)
-            sendto_one(sptr, rpl_str(RPL_INFO),
+          sendto_one(&me, sptr, rpl_str(RPL_INFO),
                        me.name, parv[0], *text++);
                         
-        sendto_one(sptr, rpl_str(RPL_INFO), me.name, parv[0], "");
+      sendto_one(&me, sptr, rpl_str(RPL_INFO), me.name, parv[0], "");
 
         /* I am -definately- going to come up with a replacement for this! */
         /* you didnt, so i removed it.. kinda stupid anyway.  -epi */
         
-        sendto_one(sptr,
+      sendto_one(&me, sptr,
                    ":%s %d %s :Birth Date: %s, compile #%s",
                    me.name, RPL_INFO, parv[0], creation, generation);
-        sendto_one(sptr, ":%s %d %s :On-line since %s",
+      sendto_one(&me, sptr, ":%s %d %s :On-line since %s",
                    me.name, RPL_INFO, parv[0],
                    myctime(me.firsttime));
-        sendto_one(sptr, rpl_str(RPL_ENDOFINFO), me.name, parv[0]);
+      sendto_one(&me, sptr, rpl_str(RPL_ENDOFINFO), me.name, parv[0]);
     }
  
     return 0;
@@ -524,12 +524,12 @@ m_links(aClient *cptr, aClient *sptr, int parc, char *parv[])
         if (!IsOper(sptr) && IsULine(acptr))
             continue;
 #endif
-        sendto_one(sptr, rpl_str(RPL_LINKS),
+      sendto_one(&me, sptr, rpl_str(RPL_LINKS),
                    me.name, parv[0], acptr->name, acptr->serv->up,
                    acptr->hopcount, (acptr->info[0] ? acptr->info :
                                      "(Unknown Location)"));
     }
-    sendto_one(sptr, rpl_str(RPL_ENDOFLINKS), me.name, parv[0],
+  sendto_one(&me, sptr, rpl_str(RPL_ENDOFLINKS), me.name, parv[0],
                BadPtr(mask) ? "*" : clean_mask);
     return 0;
 }
@@ -550,9 +550,9 @@ m_users(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
         }
         /* No one uses this any more... so lets remap it..   -Taner */
-        sendto_one(sptr, rpl_str(RPL_LOCALUSERS), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_LOCALUSERS), me.name, parv[0],
                    Count.local, Count.max_loc);
-        sendto_one(sptr, rpl_str(RPL_GLOBALUSERS), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_GLOBALUSERS), me.name, parv[0],
                    Count.total, Count.max_tot);
     }
     return 0;
@@ -613,7 +613,7 @@ m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
        if (parc < 2 || *parv[1] == '\0')
        {
-          sendto_one(sptr, ":%s NOTICE %s :For a list of help topics, type "
+        sendto_one(&me, sptr, ":%s NOTICE %s :For a list of help topics, type "
                      "/%s %s", me.name, sptr->name, HELPSERV, DEF_HELP_CMD);
           return -1;
        }
@@ -635,7 +635,7 @@ m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (!IsAnOper(sptr) || (helpfile == (aMotd *) NULL))
     {
         for (i = 0; msgtab[i].cmd; i++)
-            sendto_one(sptr, ":%s NOTICE %s :%s",
+          sendto_one(&me, sptr, ":%s NOTICE %s :%s",
                        me.name, parv[0], msgtab[i].cmd);
         return 0;
     }
@@ -643,7 +643,7 @@ m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
     helpfile_ptr = helpfile;
     while (helpfile_ptr)
     {
-        sendto_one(sptr,
+      sendto_one(&me, sptr,
                    ":%s NOTICE %s :%s",
                    me.name, parv[0], helpfile_ptr->line);
         helpfile_ptr = helpfile_ptr->next;
@@ -826,28 +826,28 @@ int send_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #ifndef SHOW_INVISIBLE_LUSERS
     if (IsAnOper(sptr) && Count.invisi)
 #endif
-        sendto_one(sptr, rpl_str(RPL_LUSERCLIENT), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_LUSERCLIENT), me.name, parv[0],
                    Count.total - Count.invisi, Count.invisi, Count.server);
 #ifndef SHOW_INVISIBLE_LUSERS
     else
-        sendto_one(sptr,
+      sendto_one(&me, sptr,
                    ":%s %d %s :There are %d users on %d servers", me.name,
                    RPL_LUSERCLIENT, parv[0], Count.total - Count.invisi,
                    Count.server);
 #endif
 
     if (Count.oper)
-        sendto_one(sptr, rpl_str(RPL_LUSEROP), me.name, parv[0], Count.oper);
+      sendto_one(&me, sptr, rpl_str(RPL_LUSEROP), me.name, parv[0], Count.oper);
 
     if (IsAnOper(sptr) && Count.unknown)
-        sendto_one(sptr, rpl_str(RPL_LUSERUNKNOWN), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_LUSERUNKNOWN), me.name, parv[0],
                    Count.unknown);
     
     /* This should be ok */
     if (Count.chan > 0)
-        sendto_one(sptr, rpl_str(RPL_LUSERCHANNELS),
+      sendto_one(&me, sptr, rpl_str(RPL_LUSERCHANNELS),
                    me.name, parv[0], Count.chan);
-    sendto_one(sptr, rpl_str(RPL_LUSERME),
+  sendto_one(&me, sptr, rpl_str(RPL_LUSERME),
 #ifdef HIDEULINEDSERVS
                me.name, parv[0], Count.local, 
                IsOper(sptr) ? Count.myserver : Count.myserver - Count.myulined);
@@ -855,9 +855,9 @@ int send_lusers(aClient *cptr, aClient *sptr, int parc, char *parv[])
                me.name, parv[0], Count.local, Count.myserver);
 #endif
 
-    sendto_one(sptr, rpl_str(RPL_LOCALUSERS), me.name, parv[0],
+  sendto_one(&me, sptr, rpl_str(RPL_LOCALUSERS), me.name, parv[0],
                    Count.local, Count.max_loc);
-    sendto_one(sptr, rpl_str(RPL_GLOBALUSERS), me.name, parv[0],
+  sendto_one(&me, sptr, rpl_str(RPL_GLOBALUSERS), me.name, parv[0],
                Count.total, Count.max_tot);
     return 0;
 }
@@ -881,14 +881,14 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsPrivileged(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return -1;
     }
     
     if ((MyClient(sptr) && !OPCanGRoute(sptr) && parc > 3) ||
         (MyClient(sptr) && !OPCanLRoute(sptr) && parc <= 3))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
     
@@ -898,14 +898,14 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || *parv[1] == '\0') 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "CONNECT");
         return -1;
     }
 
     if ((acptr = find_server(parv[1], NULL)))
     {
-        sendto_one(sptr, ":%s NOTICE %s :Connect: Server %s %s %s.",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Connect: Server %s %s %s.",
                    me.name, parv[0], parv[1], "already exists from",
                    acptr->from->name);
         return 0;
@@ -913,7 +913,7 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!(aconn = find_aConnect(parv[1])))
     {
-        sendto_one(sptr, "NOTICE %s :Connect: No Connect block found for %s.",
+      sendto_one(&me, sptr, "NOTICE %s :Connect: No Connect block found for %s.",
                    parv[0], parv[1]);
         return 0;
     }
@@ -927,7 +927,7 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if ((port = atoi(parv[2])) <= 0) 
         {
-            sendto_one(sptr,
+          sendto_one(&me, sptr,
                        "NOTICE %s :Connect: Illegal port number",
                        parv[0]);
             return 0;
@@ -935,7 +935,7 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
     else if (port <= 0 && (port = PORTNUM) <= 0) 
     {
-        sendto_one(sptr, ":%s NOTICE %s :Connect: missing port number",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Connect: missing port number",
                    me.name, parv[0]);
         return 0;
     }
@@ -962,19 +962,19 @@ m_connect(aClient *cptr, aClient *sptr, int parc, char *parv[])
     switch (retval = connect_server(aconn, sptr, NULL))
     {
         case 0:
-            sendto_one(sptr, ":%s NOTICE %s :*** Connecting to %s.",
+          sendto_one(&me, sptr, ":%s NOTICE %s :*** Connecting to %s.",
                        me.name, parv[0], aconn->name);
             break;
         case -1:
-            sendto_one(sptr, ":%s NOTICE %s :*** Couldn't connect to %s.",
+          sendto_one(&me, sptr, ":%s NOTICE %s :*** Couldn't connect to %s.",
                        me.name, parv[0], aconn->name);
             break;
         case -2:
-            sendto_one(sptr, ":%s NOTICE %s :*** Host %s is unknown.",
+          sendto_one(&me, sptr, ":%s NOTICE %s :*** Host %s is unknown.",
                        me.name, parv[0], aconn->name);
             break;
         default:
-            sendto_one(sptr, ":%s NOTICE %s :*** Connection to %s failed: %s",
+          sendto_one(&me, sptr, ":%s NOTICE %s :*** Connection to %s failed: %s",
                        me.name, parv[0], aconn->name, strerror(retval));
     }
     aconn->port = tmpport;
@@ -993,14 +993,14 @@ m_wallops(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (BadPtr(message)) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "WALLOPS");
         return 0;
     }
     
     if (!IsServer(sptr) && MyConnect(sptr) && !OPCanWallOps(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return (0);
     }
     
@@ -1021,14 +1021,14 @@ m_locops(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (BadPtr(message)) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "LOCOPS");
         return 0;
     }
 
     if (!IsServer(sptr) && MyConnect(sptr) && !OPCanLocOps(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return (0);
     }
     sendto_locops("from %s: %s", parv[0], message);
@@ -1049,13 +1049,13 @@ m_goper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (BadPtr(message)) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "GOPER");
         return 0;
     }
     if (!IsServer(sptr) || !IsULine(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -1082,13 +1082,13 @@ m_gnotice(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (BadPtr(message)) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "GNOTICE");
         return 0;
     }
     if (!IsServer(sptr) && MyConnect(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -1107,14 +1107,14 @@ m_globops(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (BadPtr(message)) 
     {
         if (MyClient(sptr))
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                        me.name, parv[0], "GLOBOPS");
         return 0;
     }
 
     if (MyClient(sptr) && !OPCanGlobOps(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
     if (strlen(message) > TOPICLEN)
@@ -1132,14 +1132,14 @@ m_chatops(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (BadPtr(message)) 
     {
         if (MyClient(sptr))
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                        me.name, parv[0], "CHATOPS");
         return 0;
     }
 
     if (MyClient(sptr) && (!IsAnOper(sptr) || !SendChatops(sptr))) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
     
@@ -1160,7 +1160,7 @@ int
 m_time(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
     if (hunt_server(cptr, sptr, ":%s TIME :%s", 1, parc, parv) == HUNTED_ISME)
-        sendto_one(sptr, rpl_str(RPL_TIME), me.name,
+      sendto_one(&me, sptr, rpl_str(RPL_TIME), me.name,
                    parv[0], me.name, NOW, date((long) 0));
     return 0;
 }
@@ -1182,13 +1182,13 @@ m_admin(aClient *cptr, aClient *sptr, int parc, char *parv[])
                            sptr->name, sptr->user->username, sptr->user->host,
                            sptr->user->server);
     
-        sendto_one(sptr, rpl_str(RPL_ADMINME),
+      sendto_one(&me, sptr, rpl_str(RPL_ADMINME),
                    me.name, parv[0], me.name);
-        sendto_one(sptr, rpl_str(RPL_ADMINLOC1),
+      sendto_one(&me, sptr, rpl_str(RPL_ADMINLOC1),
                    me.name, parv[0], MeLine->admin[0] ? MeLine->admin[0] : "");
-        sendto_one(sptr, rpl_str(RPL_ADMINLOC2),
+      sendto_one(&me, sptr, rpl_str(RPL_ADMINLOC2),
                    me.name, parv[0], MeLine->admin[1] ? MeLine->admin[1] : "");
-        sendto_one(sptr, rpl_str(RPL_ADMINEMAIL),
+      sendto_one(&me, sptr, rpl_str(RPL_ADMINEMAIL),
                    me.name, parv[0], MeLine->admin[2] ? MeLine->admin[2] : "");
     return 0;
 }
@@ -1213,7 +1213,7 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!MyClient(sptr) || !IsOper(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -1228,7 +1228,7 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
                 if (new_value > MAX_ACTIVECONN) 
                 {
-                    sendto_one(sptr,
+                  sendto_one(&me, sptr,
                                ":%s NOTICE %s :You cannot set MAXCLIENTS "
                                "above the compiled FD limit (%d)", me.name,
                                parv[0], MAX_ACTIVECONN);
@@ -1237,14 +1237,14 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 if (new_value < 0)
                     new_value = 0;
                 MAXCLIENTS = new_value;
-                sendto_one(sptr, ":%s NOTICE %s :NEW MAXCLIENTS = %d (Current "
+              sendto_one(&me, sptr, ":%s NOTICE %s :NEW MAXCLIENTS = %d (Current "
                            "= %d)", me.name, parv[0], MAXCLIENTS, Count.local);
                 sendto_realops("%s!%s@%s set new MAXCLIENTS to %d "
                                "(%d current)", parv[0], sptr->user->username,
                                sptr->sockhost, MAXCLIENTS, Count.local);
                 return 0;
             }
-            sendto_one(sptr, ":%s NOTICE %s :MAXCLIENTS is %d (%d online)",
+          sendto_one(&me, sptr, ":%s NOTICE %s :MAXCLIENTS is %d (%d online)",
                        me.name, parv[0], MAXCLIENTS, Count.local);
             return 0;
         }
@@ -1256,19 +1256,19 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 int newval = atoi(parv[2]);
                 if (newval <= 0) 
                 {
-                    sendto_one(sptr, ":%s NOTICE %s :flud NUM must be > 0",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :flud NUM must be > 0",
                                me.name, parv[0]);
                     return 0;
                 }
                 flud_num = newval;
                 sendto_ops("%s has changed flud NUM to %i", parv[0], flud_num);
-                sendto_one(sptr, ":%s NOTICE %s :flud NUM is now set to %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :flud NUM is now set to %i",
                            me.name, parv[0], flud_num);
                 return 0;
             }
             else
             {
-                sendto_one(sptr, ":%s NOTICE %s :flud NUM is currently %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :flud NUM is currently %i",
                            me.name, parv[0], flud_num);
                 return 0;
             }
@@ -1280,20 +1280,20 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 int newval = atoi(parv[2]);
                 if (newval <= 0) 
                 {
-                    sendto_one(sptr, ":%s NOTICE %s :flud TIME must be > 0",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :flud TIME must be > 0",
                                me.name, parv[0]);
                     return 0;
                 }
                 flud_time = newval;
                 sendto_ops("%s has changed flud TIME to %i", parv[0],
                            flud_time);
-                sendto_one(sptr, ":%s NOTICE %s :flud TIME is now set to %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :flud TIME is now set to %i",
                            me.name, parv[0], flud_time);
                 return 0;
             }
             else 
             {
-                sendto_one(sptr, ":%s NOTICE %s :flud TIME is currently %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :flud TIME is currently %i",
                            me.name, parv[0], flud_time);
                 return 0;
             }
@@ -1305,7 +1305,7 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 int newval = atoi(parv[2]);
                 if (newval < 0) 
                 {
-                    sendto_one(sptr, ":%s NOTICE %s :flud BLOCK must be >= 0",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :flud BLOCK must be >= 0",
                                me.name, parv[0]);
                     return 0;
                 }
@@ -1314,21 +1314,21 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 {
                     sendto_ops("%s has disabled flud detection/protection",
                                parv[0]);
-                    sendto_one(sptr, ":%s NOTICE %s :flud detection disabled",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :flud detection disabled",
                                me.name, parv[0]);
                 }
                 else
                 {
                     sendto_ops("%s has changed flud BLOCK to %i",
                                parv[0], flud_block);
-                    sendto_one(sptr, ":%s NOTICE %s :flud BLOCK is now set "
+                  sendto_one(&me, sptr, ":%s NOTICE %s :flud BLOCK is now set "
                                "to %i", me.name, parv[0], flud_block);
                 }
                 return 0;
             }
             else
             {
-                sendto_one(sptr, ":%s NOTICE %s :flud BLOCK is currently %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :flud BLOCK is currently %i",
                            me.name, parv[0], flud_block);
                 return 0;
             }
@@ -1345,7 +1345,7 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 int newval = atoi(parv[2]);
                 if (newval <= 0) 
                 {
-                    sendto_one(sptr, ":%s NOTICE %s :spam NUM must be > 0",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :spam NUM must be > 0",
                                me.name, parv[0]);
                     return 0;
                 }
@@ -1354,13 +1354,13 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 else
                     spam_num = newval;
                 sendto_ops("%s has changed spam NUM to %i", parv[0], spam_num);
-                sendto_one(sptr, ":%s NOTICE %s :spam NUM is now set to %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :spam NUM is now set to %i",
                            me.name, parv[0], spam_num);
                 return 0;
             }
             else 
             {
-                sendto_one(sptr, ":%s NOTICE %s :spam NUM is currently %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :spam NUM is currently %i",
                            me.name, parv[0], spam_num);
                 return 0;
             }
@@ -1372,7 +1372,7 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 int newval = atoi(parv[2]);
                 if (newval <= 0) 
                 {
-                    sendto_one(sptr, ":%s NOTICE %s :spam TIME must be > 0",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :spam TIME must be > 0",
                                me.name, parv[0]);
                     return 0;
                 }
@@ -1382,13 +1382,13 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     spam_time = newval;
                 sendto_ops("%s has changed spam TIME to %i", parv[0],
                            spam_time);
-                sendto_one(sptr, ":%s NOTICE %s :SPAM TIME is now set to %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :SPAM TIME is now set to %i",
                            me.name, parv[0], spam_time);
                 return 0;
             }
             else 
             {
-                sendto_one(sptr, ":%s NOTICE %s :spam TIME is currently %i",
+              sendto_one(&me, sptr, ":%s NOTICE %s :spam TIME is currently %i",
                            me.name, parv[0], spam_time);
                 return 0;
             }
@@ -1459,19 +1459,19 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                if (to != NULL) {
                   sendto_ops("%s has changed throttle %s to %s", parv[0],
                         changed, to);
-                  sendto_one(sptr, ":%s NOTICE %s :set throttle %s to %s",
+                sendto_one(&me, sptr, ":%s NOTICE %s :set throttle %s to %s",
                         me.name, parv[0], changed, to);
                }
            } else {
               /* report various things, we cannot easily get the hash size, so
                * leave that alone. */
-              sendto_one(sptr, ":%s NOTICE %s :THROTTLE %s", me.name, parv[0],
+            sendto_one(&me, sptr, ":%s NOTICE %s :THROTTLE %s", me.name, parv[0],
                     throttle_enable ? "enabled" : "disabled");
-              sendto_one(sptr, ":%s NOTICE %s :THROTTLE COUNT=%d", me.name,
+            sendto_one(&me, sptr, ":%s NOTICE %s :THROTTLE COUNT=%d", me.name,
                     parv[0], throttle_tcount);
-              sendto_one(sptr, ":%s NOTICE %s :THROTTLE TIME=%d sec", me.name,
+            sendto_one(&me, sptr, ":%s NOTICE %s :THROTTLE TIME=%d sec", me.name,
                     parv[0], throttle_ttime);
-              sendto_one(sptr, ":%s NOTICE %s :THROTTLE RECORDTIME=%d sec", me.name,
+            sendto_one(&me, sptr, ":%s NOTICE %s :THROTTLE RECORDTIME=%d sec", me.name,
                     parv[0], throttle_rtime);
            }
         }
@@ -1485,33 +1485,33 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 rval = clones_set(parv[2], CLIM_SOFT_LOCAL, limit);
 
                 if (rval < 0)
-                    sendto_one(sptr, ":%s NOTICE %s :Invalid IP or limit.",
+                  sendto_one(&me, sptr, ":%s NOTICE %s :Invalid IP or limit.",
                                me.name, parv[0]);
                 else if (rval > 0 && limit == 0)
                 {
                     sendto_ops("%s removed soft local clone limit for %s",
                                parv[0], parv[2]);
-                    sendto_one(sptr, ":%s NOTICE %s :removed soft local clone"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :removed soft local clone"
                                " limit for %s", me.name, parv[0], parv[2]);
                 }
                 else if (rval > 0)
                 {
                     sendto_ops("%s changed soft local clone limit for %s from"
                                " %d to %d", parv[0], parv[2], rval, limit);
-                    sendto_one(sptr, ":%s NOTICE %s :changed soft local clone"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :changed soft local clone"
                                " limit for %s from %d to %d", me.name, parv[0],
                                parv[2], rval, limit);
                 }
                 else if (limit == 0)
                 {
-                    sendto_one(sptr, ":%s NOTICE %s :no soft local clone limit"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :no soft local clone limit"
                                " for %s", me.name, parv[0], parv[2]);
                 }
                 else
                 {
                     sendto_ops("%s set soft local clone limit for %s to %d",
                                parv[0], parv[2], limit);
-                    sendto_one(sptr, ":%s NOTICE %s :set soft local clone"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :set soft local clone"
                                " limit for %s to %d", me.name, parv[0],
                                parv[2], limit);
                 }
@@ -1523,15 +1523,15 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 clones_get(parv[2], &hglimit, &sglimit, &sllimit);
 
                 if (!sllimit)
-                    sendto_one(sptr, ":%s NOTICE %s :no soft local clone limit"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :no soft local clone limit"
                                " for %s", me.name, parv[0], parv[2]);
                 else
-                    sendto_one(sptr, ":%s NOTICE %s :soft local clone limit"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :soft local clone limit"
                                " for %s is %d", me.name, parv[0], parv[2],
                                sllimit);
             }
             else
-                sendto_one(sptr, ":%s NOTICE %s :Usage: LCLONES <ip> [<limit>]",
+              sendto_one(&me, sptr, ":%s NOTICE %s :Usage: LCLONES <ip> [<limit>]",
                            me.name, parv[0]);
         }
         else if (!strncasecmp(command, "GCLONES", 3))
@@ -1544,7 +1544,7 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 clones_get(parv[2], &hglimit, &sglimit, &sllimit);
 
                 if (hglimit && limit > hglimit)
-                    sendto_one(sptr, ":%s NOTICE %s :Cannot set soft global"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :Cannot set soft global"
                                " clone limit for %s above services-set hard"
                                " limit (%d)", me.name, parv[0], parv[2],
                                hglimit);
@@ -1553,13 +1553,13 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     rval = clones_set(parv[2], CLIM_SOFT_GLOBAL, limit);
 
                     if (rval < 0)
-                        sendto_one(sptr, ":%s NOTICE %s :Invalid IP or limit.",
+                      sendto_one(&me, sptr, ":%s NOTICE %s :Invalid IP or limit.",
                                    me.name, parv[0]);
                     else if (rval > 0 && limit == 0)
                     {
                         sendto_ops("%s removed soft global clone limit for %s",
                                    parv[0], parv[2]);
-                        sendto_one(sptr, ":%s NOTICE %s :removed soft global"
+                      sendto_one(&me, sptr, ":%s NOTICE %s :removed soft global"
                                    " clone limit for %s", me.name, parv[0],
                                    parv[2]);
                     }
@@ -1568,20 +1568,20 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                         sendto_ops("%s changed soft global clone limit for %s"
                                    " from %d to %d", parv[0], parv[2], rval,
                                    limit);
-                        sendto_one(sptr, ":%s NOTICE %s :changed soft global"
+                      sendto_one(&me, sptr, ":%s NOTICE %s :changed soft global"
                                    " clone limit for %s from %d to %d",
                                    me.name, parv[0], parv[2], rval, limit);
                     }
                     else if (limit == 0)
                     {
-                        sendto_one(sptr, ":%s NOTICE %s :no soft global clone"
+                      sendto_one(&me, sptr, ":%s NOTICE %s :no soft global clone"
                                    " limit for %s", me.name, parv[0], parv[2]);
                     }
                     else
                     {
                         sendto_ops("%s set soft global clone limit for %s to"
                                    " %d", parv[0], parv[2], limit);
-                        sendto_one(sptr, ":%s NOTICE %s :set soft global clone"
+                      sendto_one(&me, sptr, ":%s NOTICE %s :set soft global clone"
                                    " limit for %s to %d", me.name, parv[0],
                                    parv[2], limit);
                     }
@@ -1592,20 +1592,20 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 clones_get(parv[2], &hglimit, &sglimit, &sllimit);
 
                 if (sglimit)
-                    sendto_one(sptr, ":%s NOTICE %s :soft global clone limit"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :soft global clone limit"
                                " for %s is %d", me.name, parv[0], parv[2],
                                sglimit);
                 else
-                    sendto_one(sptr, ":%s NOTICE %s :no soft global clone"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :no soft global clone"
                                " limit for %s", me.name, parv[0], parv[2]);
 
                 if (hglimit)
-                    sendto_one(sptr, ":%s NOTICE %s :hard global clone limit"
+                  sendto_one(&me, sptr, ":%s NOTICE %s :hard global clone limit"
                                " for %s is %d", me.name, parv[0], parv[2],
                                hglimit);
             }
             else
-                sendto_one(sptr, ":%s NOTICE %s :Usage: GCLONES <ip> [<limit>]",
+              sendto_one(&me, sptr, ":%s NOTICE %s :Usage: GCLONES <ip> [<limit>]",
                            me.name, parv[0]);
         }
         else if (!strncasecmp(command, "DEFLCLONE", 6))
@@ -1626,12 +1626,12 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 sendto_ops("%s set default local clone limit to %d:%d"
                            " (host:site)", parv[0], local_ip_limit,
                            local_ip24_limit);
-                sendto_one(sptr, ":%s NOTICE %s :set default local clone limit"
+              sendto_one(&me, sptr, ":%s NOTICE %s :set default local clone limit"
                            " to %d:%d (host:site)", me.name, parv[0],
                            local_ip_limit, local_ip24_limit);
             }
             else
-                sendto_one(sptr, ":%s NOTICE %s :default local clone limit is"
+              sendto_one(&me, sptr, ":%s NOTICE %s :default local clone limit is"
                            " %d:%d (host:site)", me.name, parv[0],
                            local_ip_limit, local_ip24_limit);
         }
@@ -1653,12 +1653,12 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 sendto_ops("%s set default global clone limit to %d:%d"
                            " (host:site)", parv[0], global_ip_limit,
                            global_ip24_limit);
-                sendto_one(sptr, ":%s NOTICE %s :set default global clone"
+              sendto_one(&me, sptr, ":%s NOTICE %s :set default global clone"
                            " limit to %d:%d (host:site)", me.name, parv[0],
                            global_ip_limit, global_ip24_limit);
             }
             else
-                sendto_one(sptr, ":%s NOTICE %s :default global clone limit is"
+              sendto_one(&me, sptr, ":%s NOTICE %s :default global clone limit is"
                            " %d:%d (host:site)", me.name, parv[0],
                            global_ip_limit, global_ip24_limit);
         }
@@ -1666,22 +1666,22 @@ m_set(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
     else 
     {
-        sendto_one(sptr, ":%s NOTICE %s :Options: MAX",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Options: MAX",
                    me.name, parv[0]);
 #ifdef FLUD
-        sendto_one(sptr, ":%s NOTICE %s :Options: FLUDNUM, FLUDTIME, "
+      sendto_one(&me, sptr, ":%s NOTICE %s :Options: FLUDNUM, FLUDTIME, "
                    "FLUDBLOCK", me.name, parv[0]);
 #endif
 
 #ifdef ANTI_SPAMBOT
-        sendto_one(sptr, ":%s NOTICE %s :Options: SPAMNUM, SPAMTIME",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Options: SPAMNUM, SPAMTIME",
                    me.name, parv[0]);
 #endif
 
 #ifdef THROTTLE_ENABLE
-        sendto_one(sptr, ":%s NOTICE %s :Options: THROTTLE "
+      sendto_one(&me, sptr, ":%s NOTICE %s :Options: THROTTLE "
               "<ENABLE|COUNT|TIME|RECORDTIME|HASH> [setting]", me.name, parv[0]);
-        sendto_one(sptr, ":%s NOTICE %s :Options: LCLONES, GCLONES, "
+      sendto_one(&me, sptr, ":%s NOTICE %s :Options: LCLONES, GCLONES, "
                    "DEFLCLONES, DEFGCLONES", me.name, parv[0]);
 #endif
     }
@@ -1694,7 +1694,7 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
     if (!OPCanRehash(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
         
@@ -1702,7 +1702,7 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (mycmp(parv[1], "DNS") == 0) 
         {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0], "DNS");
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0], "DNS");
             flush_cache();              /* flush the dns cache */
             res_init();         /* re-read /etc/resolv.conf */
             sendto_ops("%s is rehashing DNS while whistling innocently",
@@ -1711,7 +1711,7 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
         }
         else if (mycmp(parv[1], "TKLINES") == 0)
         {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                        "temp klines");
             remove_userbans_match_flags(UBAN_LOCAL|UBAN_TEMPORARY, 0);
             sendto_ops("%s is clearing temp klines while whistling innocently",
@@ -1720,7 +1720,7 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
         }
         else if (mycmp(parv[1], "GC") == 0) 
         {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                        "garbage collecting");
             block_garbage_collect();
             sendto_ops("%s is garbage collecting while whistling innocently",
@@ -1737,21 +1737,21 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
         }
         else if(mycmp(parv[1], "AKILLS") == 0) 
         {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                        "akills");
             remove_userbans_match_flags(UBAN_NETWORK, 0);
             sendto_ops("%s is rehashing akills", parv[0]);
             return 0;
         }
         else if(mycmp(parv[1], "THROTTLES") == 0) {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                  "throttles");
             throttle_rehash();
             sendto_ops("%s is rehashing throttles", parv[0]);
             return 0;
         }
         else if(mycmp(parv[1], "SQLINES") == 0) {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                  "sqlines");
             sendto_ops("%s is rehashing sqlines", parv[0]);
             remove_simbans_match_flags(SBAN_NICK|SBAN_NETWORK, 0);
@@ -1759,14 +1759,14 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
         }
         else if(mycmp(parv[1], "SGLINES") == 0) {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                  "sglines");
             sendto_ops("%s is rehashing sglines", parv[0]);
             remove_simbans_match_flags(SBAN_GCOS|SBAN_NETWORK, 0);
             return 0;
         }
         else if(mycmp(parv[1], "TSQGLINES") == 0) {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                  "tsqglines");
             sendto_ops("%s is rehashing temporary sqlines/glines", parv[0]);
             remove_simbans_match_flags(SBAN_GCOS|SBAN_TEMPORARY, 0);
@@ -1776,7 +1776,7 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
         }
 #ifdef USE_SSL
         else if(mycmp(parv[1], "SSL") == 0) {
-            sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0],
                  "ssl");
             sendto_ops("%s is rehashing ssl", parv[0]);
             ssl_rehash();
@@ -1785,7 +1785,7 @@ m_rehash(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
     else 
     {
-        sendto_one(sptr, rpl_str(RPL_REHASHING), me.name, parv[0], configfile);
+      sendto_one(&me, sptr, rpl_str(RPL_REHASHING), me.name, parv[0], configfile);
         sendto_ops("%s is rehashing Server config file while whistling "
                    "innocently", parv[0]);
 # ifdef USE_SYSLOG
@@ -1805,7 +1805,7 @@ m_restart(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (!OPCanRestart(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
     /*
@@ -1817,13 +1817,13 @@ m_restart(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (parc < 2) 
         {
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                        "RESTART");
             return 0;
         }
         if (strcmp(pass, parv[1])) 
         {
-            sendto_one(sptr, err_str(ERR_PASSWDMISMATCH), me.name, parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_PASSWDMISMATCH), me.name, parv[0]);
             return 0;
         }
     }
@@ -1857,7 +1857,7 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #ifdef NO_USER_TRACE
     if(!IsAnOper(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 #endif
@@ -1867,7 +1867,7 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (!(IsAnOper(sptr)) && IsULine(acptr))
         {
-            sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             return 0;
         }
         acptr = NULL; /* shrug, we borrowed it, reset it just in case */
@@ -1884,11 +1884,11 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
         {
             aClient    *ac2ptr = next_client_double(client, tname);
             if (ac2ptr)
-                sendto_one(sptr, rpl_str(RPL_TRACELINK), me.name, parv[0],
+              sendto_one(&me, sptr, rpl_str(RPL_TRACELINK), me.name, parv[0],
                            version, debugmode, tname, 
                            ac2ptr->from->name);
             else
-                sendto_one(sptr, rpl_str(RPL_TRACELINK), me.name, parv[0],
+              sendto_one(&me, sptr, rpl_str(RPL_TRACELINK), me.name, parv[0],
                            version, debugmode, tname, 
                            "ac2ptr_is_NULL!!");
             return 0;
@@ -1904,7 +1904,7 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
             (strchr(parv[1], '*') || strchr(parv[1], '?'))) 
             /* bzzzt, no wildcard nicks for nonopers */
         {
-            sendto_one(sptr, rpl_str(RPL_ENDOFTRACE),me.name,
+          sendto_one(&me, sptr, rpl_str(RPL_ENDOFTRACE),me.name,
                        parv[0], parv[1]);
             return 0;        
         }
@@ -1925,7 +1925,7 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
         {
             /* this should only be reached if the matching
                target is this server */
-            sendto_one(sptr, rpl_str(RPL_ENDOFTRACE),me.name,
+          sendto_one(&me, sptr, rpl_str(RPL_ENDOFTRACE),me.name,
                        parv[0], tname);
             return 0;
                           
@@ -1937,17 +1937,17 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
         name = get_client_name(acptr,FALSE);
         if (IsAnOper(acptr)) 
         {
-            sendto_one(sptr, rpl_str(RPL_TRACEOPERATOR),
+          sendto_one(&me, sptr, rpl_str(RPL_TRACEOPERATOR),
                        me.name, parv[0], class, name,
                        timeofday - acptr->lasttime);
         }
         else
         {
-            sendto_one(sptr,rpl_str(RPL_TRACEUSER),
+          sendto_one(&me, sptr,rpl_str(RPL_TRACEUSER),
                        me.name, parv[0], class, name,
                        timeofday - acptr->lasttime);
         }
-        sendto_one(sptr, rpl_str(RPL_ENDOFTRACE),me.name,
+      sendto_one(&me, sptr, rpl_str(RPL_ENDOFTRACE),me.name,
                    parv[0], tname);
         return 0;        
     }
@@ -2002,18 +2002,18 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
         switch (acptr->status) 
         {
             case STAT_CONNECTING:
-                sendto_one(sptr, rpl_str(RPL_TRACECONNECTING), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_TRACECONNECTING), me.name,
                            parv[0], class, name);
                 break;
             case STAT_HANDSHAKE:
-                sendto_one(sptr, rpl_str(RPL_TRACEHANDSHAKE), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_TRACEHANDSHAKE), me.name,
                            parv[0], class, name);
                 break;
             case STAT_ME:
                 break;
             case STAT_UNKNOWN:
                 /* added time -Taner */
-                sendto_one(sptr, rpl_str(RPL_TRACEUNKNOWN),
+              sendto_one(&me, sptr, rpl_str(RPL_TRACEUNKNOWN),
                           me.name, parv[0], class, name,
                           acptr->firsttime ? timeofday - acptr->firsttime : -1);
                 break;
@@ -2027,13 +2027,13 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     IsAnOper(acptr)) 
                 {
                     if (IsAnOper(acptr))
-                        sendto_one(sptr, rpl_str(RPL_TRACEOPERATOR),
+                      sendto_one(&me, sptr, rpl_str(RPL_TRACEOPERATOR),
                                me.name, parv[0], class, name,
                                timeofday - acptr->lasttime);
                 }
                 break;
             case STAT_SERVER:
-                sendto_one(sptr, rpl_str(RPL_TRACESERVER),
+              sendto_one(&me, sptr, rpl_str(RPL_TRACESERVER),
                            me.name, parv[0], class, link_s[i],
                            link_u[i], name, 
                            *(acptr->serv->bynick) ? acptr->serv->bynick : "*", 
@@ -2042,18 +2042,18 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
                            me.name);
                 break;
             case STAT_LOG:
-                sendto_one(sptr, rpl_str(RPL_TRACELOG), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_TRACELOG), me.name,
                            parv[0], LOGFILE, acptr->port);
                 break;
             default:                /* ...we actually shouldn't come here... */
-                sendto_one(sptr, rpl_str(RPL_TRACENEWTYPE), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_TRACENEWTYPE), me.name,
                            parv[0], name);
                 break;
         }
     }
 
     /* let the user have some idea that its at the end of the trace */
-    sendto_one(sptr, rpl_str(RPL_TRACESERVER),
+  sendto_one(&me, sptr, rpl_str(RPL_TRACESERVER),
                 me.name, parv[0], "NONE", link_s[me.fd],
                 link_u[me.fd], me.name, "*", "*", me.name,
                 acptr ? timeofday - acptr->lasttime : 0);
@@ -2062,10 +2062,10 @@ m_trace(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #endif
         for (cltmp = classes; doall && cltmp; cltmp = cltmp->next)
             if (cltmp->links > 0)
-                sendto_one(sptr, rpl_str(RPL_TRACECLASS), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_TRACECLASS), me.name,
                            parv[0], cltmp->name, cltmp->links);
         
-    sendto_one(sptr, rpl_str(RPL_ENDOFTRACE), me.name, parv[0], tname);
+  sendto_one(&me, sptr, rpl_str(RPL_ENDOFTRACE), me.name, parv[0], tname);
     return 0;
 }
 
@@ -2084,7 +2084,7 @@ m_motd(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (IsSquelch(sptr)) 
         {
-            sendto_one(sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
+          sendto_one(&me, sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
             return 0;
         }
         if ((last_used + MOTD_WAIT) > NOW)
@@ -2116,21 +2116,21 @@ send_motd(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (motd == (aMotd *) NULL) 
     {
-        sendto_one(sptr, err_str(ERR_NOMOTD), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOMOTD), me.name, parv[0]);
         return 0;
     }
-    sendto_one(sptr, rpl_str(RPL_MOTDSTART), me.name, parv[0], me.name);
+  sendto_one(&me, sptr, rpl_str(RPL_MOTDSTART), me.name, parv[0], me.name);
 
-    sendto_one(sptr, ":%s %d %s :-%s", me.name, RPL_MOTD, parv[0], 
+  sendto_one(&me, sptr, ":%s %d %s :-%s", me.name, RPL_MOTD, parv[0], 
                motd_last_changed_date);
 
     temp = motd;
     while (temp) 
     {
-        sendto_one(sptr, rpl_str(RPL_MOTD),  me.name, parv[0], temp->line);
+      sendto_one(&me, sptr, rpl_str(RPL_MOTD),  me.name, parv[0], temp->line);
         temp = temp->next;
     }
-    sendto_one(sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
+  sendto_one(&me, sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
     return 0;
 }
 
@@ -2296,7 +2296,7 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!MyOper(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -2307,12 +2307,12 @@ m_close(aClient *cptr, aClient *sptr, int parc, char *parv[])
         if (!IsUnknown(acptr) && !IsConnecting(acptr) &&
             !IsHandshake(acptr))
             continue;
-        sendto_one(sptr, rpl_str(RPL_CLOSING), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_CLOSING), me.name, parv[0],
                    get_client_name(acptr, TRUE), acptr->status);
         exit_client(acptr, acptr, acptr, "Oper Closing");
         closed++;
     }
-    sendto_one(sptr, rpl_str(RPL_CLOSEEND), me.name, parv[0], closed);
+  sendto_one(&me, sptr, rpl_str(RPL_CLOSEEND), me.name, parv[0], closed);
     return 0;
 }
 
@@ -2325,7 +2325,7 @@ m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!OPCanDie(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
     /* X line -mjs */
@@ -2334,13 +2334,13 @@ m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (parc < 2) 
         {
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
                        parv[0], "DIE");
             return 0;
         }
         if (strcmp(pass, parv[1])) 
         {
-            sendto_one(sptr, err_str(ERR_PASSWDMISMATCH), me.name, parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_PASSWDMISMATCH), me.name, parv[0]);
             return 0;
         }
     }
@@ -2350,12 +2350,12 @@ m_die(aClient *cptr, aClient *sptr, int parc, char *parv[])
         if (!(acptr = local[i]))
             continue;
         if (IsClient(acptr))
-            sendto_one(acptr,
+          sendto_one(&me, acptr,
                        ":%s NOTICE %s :Server Terminating. %s",
                        me.name, acptr->name,
                        get_client_name(sptr, FALSE));
         else if (IsServer(acptr))
-            sendto_one(acptr, ":%s ERROR :Terminated by %s",
+          sendto_one(&me, acptr, ":%s ERROR :Terminated by %s",
                        me.name, get_client_name(sptr, TRUE));
     }
     s_die();
@@ -2452,10 +2452,10 @@ m_svskill(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
         }
         else if(ts == 0) 
-            sendto_one(acptr->from, ":%s SVSKILL %s :%s", parv[0], parv[1],
+          sendto_one(&me, acptr->from, ":%s SVSKILL %s :%s", parv[0], parv[1],
                                comment);
         else
-            sendto_one(acptr->from, ":%s SVSKILL %s %ld :%s", parv[0], parv[1],
+          sendto_one(&me, acptr->from, ":%s SVSKILL %s %ld :%s", parv[0], parv[1],
                                ts, comment);
     }
     return 0;
@@ -2567,7 +2567,7 @@ m_rakill(aClient *cptr, aClient *sptr, int parc, char *parv[])
     /* just quickly find the akill and be rid of it! */
     if(parc<3) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "RAKILL");
         return 0;
     }
@@ -2617,11 +2617,11 @@ show_watch(aClient *cptr, char *name, int rpl1, int rpl2)
     aClient *acptr;     
     
     if ((acptr = find_person(name, NULL)))
-        sendto_one(cptr, rpl_str(rpl1), me.name, cptr->name,
+      sendto_one(&me, cptr, rpl_str(rpl1), me.name, cptr->name,
                    acptr->name, acptr->user->username,
                    acptr->user->host, acptr->lasttime);
     else
-        sendto_one(cptr, rpl_str(rpl2), me.name, cptr->name,
+      sendto_one(&me, cptr, rpl_str(rpl2), me.name, cptr->name,
                    name, "*", "*", 0);
 }
         
@@ -2658,7 +2658,7 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 if ((sptr->watches >= MAXWATCH) && !IsAnOper(sptr))
                 {
-                    sendto_one(sptr, err_str(ERR_TOOMANYWATCH),
+                  sendto_one(&me, sptr, err_str(ERR_TOOMANYWATCH),
                                me.name, cptr->name, s+1);                                       
                     continue;
                 }                               
@@ -2714,7 +2714,7 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
             anptr = hash_get_watch(sptr->name);
             if (anptr)
                 for (lp = anptr->watch, count = 1; (lp = lp->next); count++);
-            sendto_one(sptr, rpl_str(RPL_WATCHSTAT), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_WATCHSTAT), me.name, parv[0],
                        sptr->watches, count);
                         
             /*
@@ -2723,7 +2723,7 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
              */
             if ((lp = sptr->watch) == NULL) 
             {
-                sendto_one(sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
+              sendto_one(&me, sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
                            *s);
                 continue;
             }
@@ -2734,7 +2734,7 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 if (count+strlen(lp->value.wptr->nick)+1 > BUFSIZE - 2) 
                 {
-                    sendto_one(sptr, rpl_str(RPL_WATCHLIST), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_WATCHLIST), me.name,
                                parv[0], buf);
                     listcount++;
                     *buf = '\0';
@@ -2744,8 +2744,8 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 strcat(buf, lp->value.wptr->nick);
                 count += (strlen(lp->value.wptr->nick)+1);
             }
-            sendto_one(sptr, rpl_str(RPL_WATCHLIST), me.name, parv[0], buf);
-            sendto_one(sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_WATCHLIST), me.name, parv[0], buf);
+          sendto_one(&me, sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
                        *s);
             listcount++;
             continue;
@@ -2768,7 +2768,7 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
             while (lp) 
             {
                 if ((acptr = find_person(lp->value.wptr->nick, NULL)))
-                    sendto_one(sptr, rpl_str(RPL_NOWON), me.name, parv[0],
+                  sendto_one(&me, sptr, rpl_str(RPL_NOWON), me.name, parv[0],
                                acptr->name, acptr->user->username,
                                acptr->user->host, acptr->tsinfo);
                 /*
@@ -2776,14 +2776,14 @@ m_watch(aClient *cptr, aClient *sptr, int parc, char *parv[])
                  * 'L' (full list wanted).
                  */
                 else if (IsUpper(*s))
-                    sendto_one(sptr, rpl_str(RPL_NOWOFF), me.name, parv[0],
+                  sendto_one(&me, sptr, rpl_str(RPL_NOWOFF), me.name, parv[0],
                                lp->value.wptr->nick, "*", "*",
                                lp->value.wptr->lasttime);
                 lp = lp->next;
                 listcount++;
             }
                         
-            sendto_one(sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_ENDOFWATCHLIST), me.name, parv[0],
                        *s);
             continue;
         }
@@ -2862,7 +2862,7 @@ m_unsqline(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if(parc < 2) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "UNSQLINE");
         return 0;
     }
@@ -2964,7 +2964,7 @@ m_unsgline(aClient *cptr, aClient *sptr, int parc, char *parv[])
    
     if(parc<2) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "UNSGLINE");
         return 0;
     }
@@ -2995,13 +2995,13 @@ m_check(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsAnOper(sptr))
     {
-        sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
     if (parc < 3 || mycmp(parv[1], "nick"))
     {
-        sendto_one(sptr, "NOTICE %s :Syntax: CHECK NICK <nickname>", parv[0]);
+      sendto_one(&me, sptr, "NOTICE %s :Syntax: CHECK NICK <nickname>", parv[0]);
         return 0;
     }
     
@@ -3010,17 +3010,17 @@ m_check(aClient *cptr, aClient *sptr, int parc, char *parv[])
         char *reason = ban->reason ? ban->reason : "<no reason>";
 
         if (ban->flags & SBAN_TEMPORARY)
-            sendto_one(sptr, "NOTICE %s :CHECK NICK: %s [expires in %ldm]: %s",
+          sendto_one(&me, sptr, "NOTICE %s :CHECK NICK: %s [expires in %ldm]: %s",
                        parv[0], ban->mask,
                        (long)((ban->timeset + ban->duration - NOW) / 60),
                        reason);
         else
-            sendto_one(sptr, "NOTICE %s :CHECK NICK: %s [permanent]: %s",
+          sendto_one(&me, sptr, "NOTICE %s :CHECK NICK: %s [permanent]: %s",
                        parv[0], ban->mask, reason);
     }
     else
     {
-        sendto_one(sptr, "NOTICE %s :CHECK NICK: no match", parv[0]);
+      sendto_one(&me, sptr, "NOTICE %s :CHECK NICK: no match", parv[0]);
     }
     
     return 0;

@@ -49,12 +49,12 @@ int m_webirc(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (parc < 5 || *parv[1] == '\0' || *parv[2] == '\0' ||
 	*parv[3] == '\0' || *parv[4] == '\0')
     {
-	sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "WEBIRC");
+	sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "WEBIRC");
 	return 0;
     }
     if (!MyConnect(sptr) || !IsUnknown(cptr) || cptr->receiveM != 1)
     {
-	sendto_one(sptr, err_str(ERR_ALREADYREGISTRED), me.name, parv[0]);
+	sendto_one(&me, sptr, err_str(ERR_ALREADYREGISTRED), me.name, parv[0]);
 	return 0;
     }
 
@@ -70,12 +70,12 @@ int m_webirc(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if (BadPtr(pwaconf->passwd) ||
 	    strncmp(pwaconf->passwd, "webirc.", strlen("webirc.")) != 0)
 	{
-	    sendto_one(sptr, "NOTICE * :Not a CGI:IRC auth block");
+	  sendto_one(&me, sptr, "NOTICE * :Not a CGI:IRC auth block");
 	    i = -1;
 	}
 	else if (!StrEq(parv[1], pwaconf->passwd + strlen("webirc.")))
 	{
-	    sendto_one(sptr, "NOTICE * :CGI:IRC password incorrect");
+	  sendto_one(&me, sptr, "NOTICE * :CGI:IRC password incorrect");
 	    i = -1;
 	}
 	else if (pwaconf->flags & CONF_FLAGS_NOTHROTTLE)
@@ -95,7 +95,7 @@ int m_webirc(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	cptr->ip_family = AF_INET6;
     else
     {
-	sendto_one(sptr, "NOTICE * :Invalid IP");
+	sendto_one(&me, sptr, "NOTICE * :Invalid IP");
 	return 0;
     }
 
@@ -119,7 +119,7 @@ int m_webirc(aClient *cptr, aClient *sptr, int parc, char *parv[])
      * Acknowledge that WEBIRC was accepted, and flush the client's send queue
      * to make debugging easier.
      */
-    sendto_one(sptr, ":%s NOTICE AUTH :*** CGI:IRC host/IP set to %s %s",
+  sendto_one(&me, sptr, ":%s NOTICE AUTH :*** CGI:IRC host/IP set to %s %s",
 	       me.name, cptr->sockhost, parv[4]);
     dump_connections(cptr->fd);
 

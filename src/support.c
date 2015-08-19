@@ -238,7 +238,7 @@ memtrace_report(aClient *cptr, const char *file)
         for (mt = mtrace_list; mt; mt = mt->next)
         {
             if (mt->initialized == 1 && mt->allocated)
-                sendto_one(cptr, ":%s %d %s :    %s:%d objects: %d  bytes: %lu",
+              sendto_one(&me, cptr, ":%s %d %s :    %s:%d objects: %d  bytes: %lu",
                            me.name, RPL_STATSDEBUG, cptr->name, mt->file,
                            mt->line, mt->objects, mt->allocated);
         }
@@ -253,7 +253,7 @@ memtrace_report(aClient *cptr, const char *file)
             continue;
         if (!mt->allocated)
             continue;
-        sendto_one(cptr, ":%s %d %s :    %s:%d objects: %d  bytes: %lu",
+      sendto_one(&me, cptr, ":%s %d %s :    %s:%d objects: %d  bytes: %lu",
                    me.name, RPL_STATSDEBUG, cptr->name, mt->file, mt->line,
                    mt->objects, mt->allocated);
     }

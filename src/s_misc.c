@@ -301,7 +301,7 @@ int remove_dcc_references(aClient *sptr)
             {
                 if((*lpp)->flags == DCC_LINK_ME)
                 {  
-                    sendto_one(acptr, ":%s %d %s :%s has been removed from "
+                  sendto_one(&me, acptr, ":%s %d %s :%s has been removed from "
                                "your DCC allow list for signing off",
                                me.name, RPL_DCCINFO, acptr->name, sptr->name);
                 }
@@ -461,10 +461,10 @@ exit_one_server(aClient *cptr, aClient *dead, aClient *from,
             continue;
 
         if (cptr->from == acptr) /* "upstream" squit */
-            sendto_one(acptr, ":%s SQUIT %s :%s", from->name, cptr->name,
+          sendto_one(&me, acptr, ":%s SQUIT %s :%s", from->name, cptr->name,
                        comment);
         else 
-            sendto_one(acptr, "SQUIT %s :%s", cptr->name, comment);
+          sendto_one(&me, acptr, "SQUIT %s :%s", cptr->name, comment);
     }
 
     del_from_client_hash_table(cptr->name, cptr); 
@@ -653,11 +653,11 @@ exit_client(aClient *cptr, aClient *sptr, aClient *from, char *comment)
         if (sptr->fd >= 0) 
         {
             if (cptr != NULL && sptr != cptr)
-                sendto_one(sptr, "ERROR :Closing Link: %s %s (%s)",
+              sendto_one(&me, sptr, "ERROR :Closing Link: %s %s (%s)",
                            IsPerson(sptr) ? sptr->sockhost : "0.0.0.0", 
                            sptr->name, comment);
             else
-                sendto_one(sptr, "ERROR :Closing Link: %s (%s)",
+              sendto_one(&me, sptr, "ERROR :Closing Link: %s (%s)",
                            IsPerson(sptr) ? sptr->sockhost : "0.0.0.0", 
                            comment);
         }
@@ -846,17 +846,17 @@ exit_banned_client(aClient *cptr, int loc, char type, char *banmsg, int fast)
     
     if (!fast)
     {
-        sendto_one(cptr, "NOTICE %s :*** You are banned from %s", target,
+      sendto_one(&me, cptr, "NOTICE %s :*** You are banned from %s", target,
                    loc ? me.name : Network_Name);
-        sendto_one(cptr, "NOTICE %s :*** Reason: %s", target, reason);
-        sendto_one(cptr, "NOTICE %s :*** Connection info: %s [%s]", target,
+      sendto_one(&me, cptr, "NOTICE %s :*** Reason: %s", target, reason);
+      sendto_one(&me, cptr, "NOTICE %s :*** Connection info: %s [%s]", target,
                    get_client_name(cptr, FALSE),
                    cipntoa(cptr));
-        sendto_one(cptr, "NOTICE %s :*** Ban contact: %s", target,
+      sendto_one(&me, cptr, "NOTICE %s :*** Ban contact: %s", target,
                    loc ? Local_Kline_Address : Network_Kline_Address);
-        sendto_one(cptr, "NOTICE %s :*** When contacting %s, please include "
+      sendto_one(&me, cptr, "NOTICE %s :*** When contacting %s, please include "
                    "all of the information shown above", target, Network_Name);
-        sendto_one(cptr, err_str(ERR_YOUREBANNEDCREEP), me.name, target, rbuf);
+      sendto_one(&me, cptr, err_str(ERR_YOUREBANNEDCREEP), me.name, target, rbuf);
         
         throttle_force(cipntoa(cptr));
     }

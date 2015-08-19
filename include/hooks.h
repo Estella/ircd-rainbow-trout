@@ -67,6 +67,8 @@ enum c_hooktype {
    CHOOK_SIGNOFF,     /* called on client exit (exit_client)
                        * Params: 1: (aClient *)
                        * Returns void */
+   CHOOK_CHECKCANSPEAK,    // Used to implement extbans. Takes two parameters, (aClient *, aChannel *channel, char *text) returns int
+   CHOOK_CHECKCANJOIN,    // Used to implement extbans. Takes two parameters, (aClient *, aChannel *channel) returns int
    MHOOK_LOAD,        /* Called for modules loading and unloading */
    MHOOK_UNLOAD       /* Params: 2: (char *modulename, void *moduleopaque) */
 };

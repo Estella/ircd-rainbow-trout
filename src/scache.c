@@ -99,7 +99,7 @@ void list_scache(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	while (ptr) 
 	{
 	    if (ptr->name)
-		sendto_one(sptr, ":%s NOTICE %s :%s",
+		sendto_one(&me, sptr, ":%s NOTICE %s :%s",
 			   me.name, parv[0], ptr->name);
 	    ptr = ptr->next;
 	}

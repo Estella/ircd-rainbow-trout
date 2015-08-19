@@ -88,13 +88,13 @@ m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!OPCanKline(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
     if (parc < 2)
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "KLINE");
         return 0;
     }
@@ -113,7 +113,7 @@ m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if (parc < 3)
         {
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                        "KLINE");
             return 0;
         }
@@ -160,14 +160,14 @@ m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (!match(user, "akjhfkahfasfjd") &&
         !match(host, "ldksjfl.kss...kdjfd.jfklsjf"))
     {
-        sendto_one(sptr, ":%s NOTICE %s :KLINE: %s@%s mask is too wide",
+      sendto_one(&me, sptr, ":%s NOTICE %s :KLINE: %s@%s mask is too wide",
                    me.name, parv[0], user, host);
         return 0;
     }
 
     if (strchr(host, ' ') || !(ban = make_hostbased_ban(user, host)))
     {
-        sendto_one(sptr, ":%s NOTICE %s :KLINE: invalid ban mask %s@%s",
+      sendto_one(&me, sptr, ":%s NOTICE %s :KLINE: invalid ban mask %s@%s",
                    me.name, parv[0], user, host);
         return 0;
     }
@@ -177,7 +177,7 @@ m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
     /* only looks for duplicate klines, not akills */
     if ((existing = find_userban_exact(ban, UBAN_LOCAL)))
     {
-        sendto_one(sptr, ":%s NOTICE %s :KLINE: %s@%s is already %s: %s",
+      sendto_one(&me, sptr, ":%s NOTICE %s :KLINE: %s@%s is already %s: %s",
                    me.name, parv[0], user, host, LOCAL_BANNED_NAME,
                    existing->reason ? existing->reason : "<no reason>");
         userban_free(ban);
@@ -186,7 +186,7 @@ m_kline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (user_match_ban(sptr, ban))
     {
-        sendto_one(sptr, ":%s NOTICE %s :KLINE: %s@%s matches you, rejected",
+      sendto_one(&me, sptr, ":%s NOTICE %s :KLINE: %s@%s matches you, rejected",
                    me.name, parv[0], user, host);
         userban_free(ban);
         return 0;
@@ -240,13 +240,13 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!OPCanUnKline(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
     if (parc < 2)
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "UNKLINE");
         return 0;
     }
@@ -264,7 +264,7 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!(ban = make_hostbased_ban(user, host)))
     {
-        sendto_one(sptr, ":%s NOTICE %s :UNKLINE: No such ban %s@%s", me.name,
+      sendto_one(&me, sptr, ":%s NOTICE %s :UNKLINE: No such ban %s@%s", me.name,
                    parv[0], user, host);
         return 0;
     }
@@ -276,14 +276,14 @@ int m_unkline(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!existing)
     {
-        sendto_one(sptr, ":%s NOTICE %s :UNKLINE: No such ban %s@%s", me.name,
+      sendto_one(&me, sptr, ":%s NOTICE %s :UNKLINE: No such ban %s@%s", me.name,
                    parv[0], user, host);
         return 0;
     }
 
     if (existing->flags & UBAN_CONF)
     {
-        sendto_one(sptr, ":%s NOTICE %s :UNKLINE: %s@%s is specified in the"
+      sendto_one(&me, sptr, ":%s NOTICE %s :UNKLINE: %s@%s is specified in the"
                    " configuration file and cannot be removed online", me.name,
                    parv[0], user, host);
         return 0;

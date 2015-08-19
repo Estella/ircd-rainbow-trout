@@ -429,9 +429,9 @@ static time_t check_pings(time_t currenttime)
                     }
 #ifdef SHOW_HEADERS
                     if (DoingDNS(cptr))
-                        sendto_one(cptr, "%s", REPORT_FAIL_DNS);
+                      sendto_one(&me, cptr, "%s", REPORT_FAIL_DNS);
                     if (DoingAuth(cptr))
-                        sendto_one(cptr, "%s", REPORT_FAIL_ID);
+                      sendto_one(&me, cptr, "%s", REPORT_FAIL_ID);
 #endif
                     Debug((DEBUG_NOTICE, "DNS/AUTH timeout %s",
                            get_client_name(cptr, TRUE)));
@@ -465,7 +465,7 @@ static time_t check_pings(time_t currenttime)
                 cptr->flags |= FLAGS_PINGSENT;
                 /* not nice but does the job */
                 cptr->lasttime = currenttime - ping;
-                sendto_one(cptr, "PING :%s", me.name);
+              sendto_one(&me, cptr, "PING :%s", me.name);
             }
         }
         
@@ -667,9 +667,8 @@ main(int argc, char *argv[])
 
     printf("\n%s booting...\n", version);
     printf("Security related issues should be sent to janicez@umbrellix.tk\n");
-    printf("All other issues should be reported at https://github.com/asterIRC/ircd-rainbow-trout\n\n");
-    printf("This is a modified IRCd. Features may not reflect those of upstream.");
-
+    printf("All other issues should be reported at https://github.com/asterIRC/ircd-rainbow-trout\n");
+    printf("This is a modified IRCd. Features may not reflect those of upstream.\n\n");
     setup_corefile();
 
     Count.server = 1;           /* us */

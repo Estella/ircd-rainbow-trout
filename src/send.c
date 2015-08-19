@@ -27,7 +27,13 @@
 #include "dh.h"
 #include "zlink.h"
 #include "fds.h"
+#include "msg.h"
 #include "memcount.h"
+
+static char sender[HOSTLEN + 1];
+static char *para[MAXPARA + 1];
+int  cancel_clients(aClient *, aClient *, char *);
+void remove_unknown(aClient *, char *, char *);
 
 /*
  * STOP_SENDING_ON_SHORT_SEND:
@@ -44,7 +50,7 @@ extern int currently_processing_netsplit;
 static char sendbuf[2048];
 static char remotebuf[2048];
 static char selfbuf[256];
-static int  send_message(aClient *, char *, int, void*);
+static int  send_message(aClient *, aClient *, char *, int, void*);
 
 #ifdef HAVE_ENCRYPTION_ON
 /*
@@ -63,6 +69,234 @@ void init_send()
 {
    memset(sentalong, 0, sizeof(int) * MAXCONNECTIONS);
    sent_serial = 0;
+}
+
+int parse2cb(aClient *from, aClient *cptr, char *buffer, char *bufend)
+{
+    aClient *to = cptr;
+    char *ch, *s;
+    struct Message *mptr;
+    int i, numeric = 0, paramcount;
+
+#ifdef DUMP_DEBUG
+    if(dumpfp!=NULL) 
+    {
+	fprintf(dumpfp, "<- %s: %s\n", (cptr->name ? cptr->name : "*"),
+		buffer);
+	fflush(dumpfp);
+    }
+#endif
+    Debug((DEBUG_DEBUG, "Parsing %s: %s", get_client_name(cptr, TRUE),
+	   buffer));
+    sendto_gnotice("%s", buffer);
+    sendto_serv_butone(&me, ":%s GNOTICE :Buf: %s", me.name, buffer);
+    
+    if (IsDead(cptr))
+	return -1;
+    
+    s = sender;
+    *s = '\0';
+    
+    for (ch = buffer; *ch == ' '; ch++);	/* skip spaces */
+    
+    para[0] = from->name;
+    if (*ch == ':') 
+    {
+	/*
+	 * Copy the prefix to 'sender' assuming it terminates with
+	 * SPACE (or NULL, which is an error, though).
+	 */
+	
+	for (++ch; *ch && *ch != ' '; ++ch)
+	    if (s < (sender + HOSTLEN))
+		*s++ = *ch;		
+	*s = '\0';
+	
+	/*
+	 * Actually, only messages coming from servers can have the
+	 * prefix--prefix silently ignored, if coming from a user
+	 * client...
+	 * 
+	 * ...sigh, the current release "v2.2PL1" generates also null
+	 * prefixes, at least to NOTIFY messages (e.g. it puts
+	 * "sptr->nickname" as prefix from server structures where it's
+	 * null--the following will handle this case as "no prefix" at
+	 * all --msa  (": NOTICE nick ...")
+	 */
+	
+	if (*sender && IsServer(cptr)) 
+	{
+	    from = find_client(sender, (aClient *) NULL);
+
+	    /*
+	     * okay, this doesn't seem to do much here.
+	     * from->name _MUST_ be equal to sender. 
+	     * That's what find_client does.
+	     * find_client will find servers too, and since we don't use server
+	     * masking, the find server call is useless (and very wasteful).
+	     * now, there HAS to be a from and from->name and
+	     * sender have to be the same
+	     * for us to get to the next if. but the next if
+	     * starts out with if(!from)
+	     * so this is UNREACHABLE CODE! AGH! - lucas
+	     *
+	     *  if (!from || mycmp(from->name, sender))
+	     *     from = find_server(sender, (aClient *) NULL);
+	     *  else if (!from && strchr(sender, '@'))
+	     *     from = find_nickserv(sender, (aClient *) NULL);
+	     */
+
+	    para[0] = sender;
+	    /*
+	     * Hmm! If the client corresponding to the prefix is not
+	     * found--what is the correct action??? Now, I will ignore the
+	     * message (old IRC just let it through as if the prefix just
+	     * wasn't there...) --msa
+	     */
+	    if (!from) 
+	    {
+		Debug((DEBUG_ERROR, "Unknown prefix (%s)(%s) from (%s)",
+		       sender, buffer, cptr->name));
+
+		ircstp->is_unpf++;
+		remove_unknown(cptr, sender, buffer);
+		 
+		return -1;
+	    }
+
+	    if (from->from != cptr) 
+	    {
+		ircstp->is_wrdi++;
+		Debug((DEBUG_ERROR, "Message (%s) coming from (%s)",
+		       buffer, cptr->name));
+		
+		return cancel_clients(cptr, from, buffer);
+	    }
+	}
+	while (*ch == ' ')
+	    ch++;
+    }
+
+    if (*ch == '\0') 
+    {
+	ircstp->is_empt++;
+	Debug((DEBUG_NOTICE, "Empty message from host %s:%s",
+	       cptr->name, from->name));
+	return (-1);
+    }
+    /*
+     * Extract the command code from the packet.  Point s to the end
+     * of the command code and calculate the length using pointer
+     * arithmetic.  Note: only need length for numerics and *all*
+     * numerics must have parameters and thus a space after the command
+     * code. -avalon
+     * 
+     * ummm???? - Dianora
+     */
+
+    /* check for numeric */
+    if (*(ch + 3) == ' ' && IsDigit(*ch) && IsDigit(*(ch + 1)) &&
+	IsDigit(*(ch + 2))) 
+    {
+	mptr = (struct Message *) NULL;
+	numeric = (*ch - '0') * 100 + (*(ch + 1) - '0') *
+	    10 + (*(ch + 2) - '0');
+	paramcount = MAXPARA;
+	ircstp->is_num++;
+	s = ch + 3;
+	*s++ = '\0';
+    }
+    else 
+    {
+	s = strchr(ch, ' ');
+	
+	if (s)
+	    *s++ = '\0';
+	
+        char *t = ch;
+        for (; *t; *t++) *t = ToUpper(*t);
+	
+	paramcount = MAXPARA;
+	i = bufend - ((s) ? s : ch);
+
+	/*
+	 * Allow only 1 msg per 2 seconds (on average) to prevent
+	 * dumping. to keep the response rate up, bursts of up to 5 msgs
+	 * are allowed -SRB Opers can send 1 msg per second, burst of ~20
+	 * -Taner
+	 */
+	if (!IsServer(cptr)) 
+	{
+        if (!NoMsgThrottle(cptr))
+        {
+#ifdef NO_OPER_FLOOD
+            if (IsAnOper(cptr))
+                /* "randomly" (weighted) increase the since */
+                cptr->since += (cptr->receiveM % 10) ? 1 : 0;
+            else
+#endif
+                cptr->since += (2 + i / 120);
+        }
+    }
+    }
+    /*
+     * Must the following loop really be so devious? On surface it
+     * splits the message to parameters from blank spaces. But, if
+     * paramcount has been reached, the rest of the message goes into
+     * this last parameter (about same effect as ":" has...) --msa
+     */
+
+    /* Note initially true: s==NULL || *(s-1) == '\0' !! */
+    
+    i = 1;
+    if (s) 
+    {
+	if (paramcount > MAXPARA)
+	    paramcount = MAXPARA;
+	for (;;) 
+	{
+	    while (*s == ' ')
+		*s++ = '\0';
+	    
+	    if (*s == '\0')
+		break;
+	    if (*s == ':') 
+	    {
+		/* The rest is a single parameter */
+		para[i++] = s + 1;
+		break;
+	    }
+	    para[i++] = s;
+	    if (i >= paramcount)
+            {
+                if(paramcount == MAXPARA && strchr(s, ' '))
+                {
+                   sendto_realops_lev(DEBUG_LEV, "Overflowed MAXPARA on %s from %s",
+			   mptr ? mptr->cmd : "numeric",
+			   get_client_name(cptr, (IsServer(cptr) ? HIDEME : FALSE)));
+                }
+		break;
+            }
+	    
+	    while(*s && *s != ' ')
+		s++;
+	}
+    }
+    
+    para[i] = NULL;
+    
+    /* patch to avoid server flooding from unregistered connects */
+    
+    if (!IsRegistered(cptr) && !(mptr->flags & MF_UNREG)) {
+      sendto_one(&me, from, err_str(ERR_NOTREGISTERED), me.name,
+                   *para[0] ? para[0] : "*", ch);
+        return -1;
+    }
+    
+    if (IsRegisteredUser(cptr) && (mptr->flags & MF_RIDLE))
+	from->user->last = timeofday;
+
+    return (*cptr->cb) (cptr, from, ch, i, para); // cptr, sptr, comd, parc, parv
 }
 
 /* This routine increments our serial number so it will
@@ -123,7 +357,7 @@ static int dead_link(aClient *to, char *notice, int sockerr)
  * Internal utility which delivers one message buffer to the 
  * socket. Takes care of the error handling and buffering, ifneeded.
  */
-static int send_message(aClient *to, char *msg, int len, void* sbuf) 
+static int send_message(aClient *from, aClient *to, char *msg, int len, void* sbuf) 
 {
     static int  SQinK;
     int flag;
@@ -281,7 +515,11 @@ static int send_message(aClient *to, char *msg, int len, void* sbuf)
         if (SQinK > (to->lastsq + 8))
             send_queued(to);
     }
-    else 
+    else if (to->cb)
+    {
+        parse2cb(from, to, msg, msg+len);
+    }
+    else
     {
         if (SQinK > (to->lastsq + 4))
             send_queued(to);
@@ -398,14 +636,14 @@ int send_queued(aClient *to)
         if (!(to->flags & FLAGS_BURST))
         {
             to->flags &= (~FLAGS_SOBSENT);
-            sendto_one(to, "BURST %d", SBufLength(&to->sendQ));
+          sendto_one(&me, to, "BURST %d", SBufLength(&to->sendQ));
         }
     }
     return (IsDead(to)) ? -1 : 0;
 }
 
 /* send message to single client */
-void sendto_one(aClient *to, char *pattern, ...) 
+void sendto_one(aClient *from, aClient *to, char *pattern, ...) 
 {
     va_list vl;
     int len;            /* used for the length of the current message */
@@ -421,7 +659,7 @@ void sendto_one(aClient *to, char *pattern, ...)
         sendto_ops("Trying to send [%s] to myself!", selfbuf);
         return;
     }
-    send_message(to, sendbuf, len, NULL);
+    send_message(from, to, sendbuf, len, NULL);
     va_end(vl);
 }
 
@@ -449,11 +687,11 @@ void sendto_alias(AliasInfo *ai, aClient *from, char *pattern, ...)
 #endif
 
     len += ircvsprintf(sendbuf+len, pattern, vl);
-    send_message(to, sendbuf, len, NULL);
+    send_message(from, to, sendbuf, len, NULL);
     va_end(vl);
 }
 
-void vsendto_one(aClient *to, char *pattern, va_list vl) 
+void vsendto_one(aClient *from, aClient *to, char *pattern, va_list vl) 
 {
     int len;            /* used for the length of the current message */
    
@@ -467,7 +705,7 @@ void vsendto_one(aClient *to, char *pattern, va_list vl)
         sendto_ops("Trying to send [%s] to myself!", selfbuf);
         return;
     }
-    send_message(to, sendbuf, len, NULL);
+    send_message(from, to, sendbuf, len, NULL);
 }
 
 /* prefix_buffer
@@ -557,7 +795,7 @@ static inline int check_fake_direction(aClient *from, aClient *to)
         exit_client(NULL, to, &me, "Ghosted client");
 
         if (IsPerson(from))
-            sendto_one(from, err_str(ERR_GHOSTEDCLIENT), me.name, from->name,
+          sendto_one(&me, from, err_str(ERR_GHOSTEDCLIENT), me.name, from->name,
                        to->name, to->user->username, to->user->host, to->from);
         return -1;
     }
@@ -603,7 +841,7 @@ void sendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
             if(check_fake_direction(from, acptr))
                     continue;
             
-            send_message(acptr, sendbuf, didlocal, share_bufs[0]);
+            send_message(from, acptr, sendbuf, didlocal, share_bufs[0]);
             sentalong[i] = sent_serial;
         }
         else 
@@ -624,7 +862,7 @@ void sendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
             
             if (sentalong[i] != sent_serial) 
             {
-                send_message(acptr, remotebuf, didremote, share_bufs[1]);
+                send_message(from, acptr, remotebuf, didremote, share_bufs[1]);
                 sentalong[i] = sent_serial;
             }
         }
@@ -672,7 +910,7 @@ void sendto_channel_butone_local(aClient *one, aClient *from, aChannel *chptr,
             if(check_fake_direction(from, acptr))
                     continue;
             
-            send_message(acptr, sendbuf, 1, share_bufs[0]);
+            send_message(from, acptr, sendbuf, 1, share_bufs[0]);
             sentalong[i] = sent_serial;
         }
         else 
@@ -732,7 +970,7 @@ void sendto_channel_remote_butone(aClient *one, aClient *from, aChannel *chptr,
             
             if (sentalong[i] != sent_serial) 
             {
-                send_message(acptr, remotebuf, didremote, share_buf);
+                send_message(from, acptr, remotebuf, didremote, share_buf);
                 sentalong[i] = sent_serial;
             }
         }
@@ -951,7 +1189,7 @@ void sendto_common_channels(aClient *from, char *pattern, ...)
                 }
                 if (check_fake_direction(from, cptr))
                     continue;
-                send_message(cptr, sendbuf, msglen, share_buf);
+                send_message(from, cptr, sendbuf, msglen, share_buf);
             }
         }
     }
@@ -961,7 +1199,7 @@ void sendto_common_channels(aClient *from, char *pattern, ...)
         if(!msglen)
             msglen = prefix_buffer(0, from, pfix, sendbuf, pattern, vl);
         /* send the share buf if others are using it too */
-        send_message(from, sendbuf, msglen, share_buf);
+        send_message(from, from, sendbuf, msglen, share_buf);
     }
     
     sbuf_end_share(&share_buf, 1);
@@ -1014,7 +1252,7 @@ void sendto_common_channels_butfrom(aClient *from, char *pattern, ...)
                 }
                 if (check_fake_direction(from, cptr))
                     continue;
-                send_message(cptr, sendbuf, msglen, share_buf);
+                send_message(from, cptr, sendbuf, msglen, share_buf);
             }
         }
     }
@@ -1024,7 +1262,7 @@ void sendto_common_channels_butfrom(aClient *from, char *pattern, ...)
         if(!msglen)
             msglen = prefix_buffer(0, from, pfix, sendbuf, pattern, vl);
         /* send the share buf if others are using it too */
-        send_message(from, sendbuf, msglen, share_buf);
+        send_message(from, from, sendbuf, msglen, share_buf);
     }
     
     sbuf_end_share(&share_buf, 1);
@@ -1070,7 +1308,7 @@ void send_quit_to_common_channels(aClient *from, char *reason)
                 sentalong[cptr->fd] = sent_serial;
                 if (check_fake_direction(from, cptr))
                     continue;
-                send_message(cptr, sendbuf, msglen, share_buf);
+                send_message(from, cptr, sendbuf, msglen, share_buf);
             }
         }
     }
@@ -1119,7 +1357,7 @@ void send_part_to_common_channels(aClient *from, char *reason)
                 sentalong[cptr->fd] = sent_serial;
                 if (check_fake_direction(from, cptr))
                     continue;
-                send_message(cptr, sendbuf, msglen, share_buf);
+                send_message(from, cptr, sendbuf, msglen, share_buf);
             }
             sbuf_end_share(&share_buf, 1);
         }
@@ -1197,7 +1435,7 @@ void sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
             if (check_fake_direction(from, acptr))
                 continue;
 
-            send_message(acptr, sendbuf, didlocal, share_buf);
+            send_message(from, acptr, sendbuf, didlocal, share_buf);
 
             /* vsendto_prefix_one(acptr, from, pattern, vl); */
         }
@@ -1239,7 +1477,7 @@ void sendto_channel_butserv_noopvoice(aChannel *chptr, aClient *from, char *patt
             if (check_fake_direction(from, acptr))
                 continue;
 
-            send_message(acptr, sendbuf, didlocal, share_buf);
+            send_message(from, acptr, sendbuf, didlocal, share_buf);
 
             /* vsendto_prefix_one(acptr, from, pattern, vl); */
         }
@@ -1289,7 +1527,7 @@ void sendto_channel_butserv_me(aChannel *chptr, aClient *from, char *pattern, ..
             if(check_fake_direction(from, acptr))
                 continue;
 
-            send_message(acptr, sendbuf, didlocal, share_buf);
+            send_message(from, acptr, sendbuf, didlocal, share_buf);
 
         }
     }
@@ -1338,7 +1576,7 @@ void sendto_channelopvoice_butserv_me(aChannel *chptr, aClient *from, char *patt
             if(check_fake_direction(from, acptr))
                 continue;
 
-            send_message(acptr, sendbuf, didlocal, share_buf);
+            send_message(from, acptr, sendbuf, didlocal, share_buf);
 
         }
     }
@@ -1419,7 +1657,7 @@ void sendto_all_servmask(aClient *from, char *mask, char *pattern, ...)
                 continue;
             if (!IsClient(cptr))
                 continue;
-            send_message(cptr, sendbuf, k, share_buf);
+            send_message(from, cptr, sendbuf, k, share_buf);
         }
         sbuf_end_share(&share_buf, 1);
     }
@@ -1534,7 +1772,7 @@ void sendto_ops_lev(int lev, char *pattern, ...)
         ircsprintf(nbuf, ":%s NOTICE %s :*** %s -- ", me.name, 
                    cptr->name, tmsg);
         strncat(nbuf, pattern, sizeof(nbuf) - strlen(nbuf));
-        vsendto_one(cptr, nbuf, vl2);
+        vsendto_one(&me, cptr, nbuf, vl2);
         va_end(vl2);
     }
     va_end(vl);
@@ -1637,7 +1875,7 @@ void send_globops(char *pattern, ...)
             VA_COPY(vl2, vl);
             ircsprintf(nbuf, ":%s NOTICE %s :*** Global -- %s",
                        me.name, cptr->name, pattern);
-            vsendto_one(cptr, nbuf, vl2);
+            vsendto_one(&me, cptr, nbuf, vl2);
             va_end(vl2);
         }
     }
@@ -1664,7 +1902,7 @@ void send_chatops(char *pattern, ...)
             VA_COPY(vl2, vl);
             ircsprintf(nbuf, ":%s NOTICE %s :*** ChatOps -- %s",
                        me.name, cptr->name, pattern);
-            vsendto_one(cptr, nbuf, vl2);
+            vsendto_one(&me, cptr, nbuf, vl2);
             va_end(vl2);
         }
     }
@@ -1721,7 +1959,7 @@ void sendto_prefix_one(aClient *to, aClient *from, char *pattern, ...)
             to->flags |= FLAGS_KILLED;
             exit_client(NULL, to, &me, "Ghosted client");
             if (IsPerson(from))
-                sendto_one(from, err_str(ERR_GHOSTEDCLIENT), me.name,
+              sendto_one(&me, from, err_str(ERR_GHOSTEDCLIENT), me.name,
                            from->name, to->name, to->user->username,
                            to->user->host, to->from);
             va_end(vl);
@@ -1785,7 +2023,7 @@ void sendto_prefix_one(aClient *to, aClient *from, char *pattern, ...)
 
     temp[sidx] = '\0'; 
 
-    vsendto_one(to, temp, vl);
+    vsendto_one(from, to, temp, vl);
     va_end(vl);
 }
 
@@ -1831,7 +2069,7 @@ void vsendto_prefix_one(aClient *to, aClient *from, char *pattern, va_list vl)
             to->flags |= FLAGS_KILLED;
             exit_client(NULL, to, &me, "Ghosted client");
             if (IsPerson(from))
-                sendto_one(from, err_str(ERR_GHOSTEDCLIENT), me.name,
+              sendto_one(&me, from, err_str(ERR_GHOSTEDCLIENT), me.name,
                            from->name, to->name, to->user->username,
                            to->user->host, to->from);
             return;
@@ -1895,7 +2133,7 @@ void vsendto_prefix_one(aClient *to, aClient *from, char *pattern, va_list vl)
 
     temp[sidx] = '\0'; 
 
-    vsendto_one(to, temp, vl2);
+    vsendto_one(from, to, temp, vl2);
 }
 
 void sendto_fdlist(fdlist *listp, char *pattern, ...)
@@ -1910,7 +2148,7 @@ void sendto_fdlist(fdlist *listp, char *pattern, ...)
         
     for (fd = listp->entry[j = 1]; j <= listp->last_entry;
          fd = listp->entry[++j])
-        send_message(local[fd], sendbuf, len, share_buf);
+        send_message(&me, local[fd], sendbuf, len, share_buf);
     sbuf_end_share(&share_buf, 1);
     va_end(vl);
 }
@@ -1924,7 +2162,7 @@ void vsendto_fdlist(fdlist *listp, char *pattern, va_list vl)
         
     for (fd = listp->entry[j = 1]; j <= listp->last_entry;
          fd = listp->entry[++j])
-        send_message(local[fd], sendbuf, len, share_buf);
+        send_message(&me, local[fd], sendbuf, len, share_buf);
     sbuf_end_share(&share_buf, 1);
 }
 
@@ -1944,7 +2182,7 @@ void vsendto_realops(char *pattern, va_list vl)
             VA_COPY(vl2, vl);
             ircsprintf(nbuf, ":%s NOTICE %s :*** Notice -- %s",
                        me.name, cptr->name, pattern);
-            vsendto_one(cptr, nbuf, vl2);
+            vsendto_one(&me, cptr, nbuf, vl2);
             va_end(vl2);
         }
     }
@@ -2069,7 +2307,7 @@ void sendto_realops_lev(int lev, char *pattern, ...)
         VA_COPY(vl2, vl);
         ircsnprintf(nbuf, 1024, ":%s NOTICE %s :*** %s -- %s",
                     me.name, cptr->name, tmsg, pattern);
-        vsendto_one(cptr, nbuf, vl2);
+        vsendto_one(&me, cptr, nbuf, vl2);
         va_end(vl2);
     }
     va_end(vl);
@@ -2134,7 +2372,7 @@ void sendto_locops(char *pattern, ...)
             VA_COPY(vl2, vl);
             ircsprintf(nbuf, ":%s NOTICE %s :*** LocOps -- %s",
                        me.name, cptr->name, pattern);
-            vsendto_one(cptr, nbuf, vl2);
+            vsendto_one(&me, cptr, nbuf, vl2);
             va_end(vl2);
         }
     }
@@ -2160,7 +2398,7 @@ void sendto_gnotice(char *pattern, ...)
             VA_COPY(vl2, vl);
             ircsprintf(nbuf, ":%s NOTICE %s :*** Routing -- %s",
                        me.name, cptr->name, pattern);
-            vsendto_one(cptr, nbuf, vl2);
+            vsendto_one(&me, cptr, nbuf, vl2);
             va_end(vl2);
         }
     }
@@ -2207,7 +2445,7 @@ void sendto_channelflags_butone(aClient *one, aClient *from, aChannel *chptr,
                 didlocal = prefix_buffer(0, from, pfix, sendbuf, pattern, vl);
                 sbuf_begin_share(sendbuf, didlocal, &share_buf[0]);
             }
-            send_message(acptr, sendbuf, didlocal, share_buf[0]);
+            send_message(from, acptr, sendbuf, didlocal, share_buf[0]);
         }
         else
         {
@@ -2222,7 +2460,7 @@ void sendto_channelflags_butone(aClient *one, aClient *from, aChannel *chptr,
                                           vl);
                 sbuf_begin_share(remotebuf, didremote, &share_buf[1]);
             }
-            send_message(acptr, remotebuf, didremote, share_buf[1]);
+            send_message(from, acptr, remotebuf, didremote, share_buf[1]);
             sentalong[fd] = sent_serial;
         }
     }

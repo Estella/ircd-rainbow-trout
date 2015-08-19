@@ -197,10 +197,10 @@ static char scratch[1024];
  */
 static void rwho_synerr(aClient *sptr, char *msg)
 {
-    sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "RWHO",
+  sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "RWHO",
                "rwho");
     if (msg)
-        sendto_one(sptr, getreply(RPL_COMMANDSYNTAX), me.name, sptr->name,msg);
+      sendto_one(&me, sptr, getreply(RPL_COMMANDSYNTAX), me.name, sptr->name,msg);
 }
 
 /*
@@ -267,9 +267,9 @@ static int rwho_compile(aClient *cptr, char *remap[])
 
                 ircsprintf(rwhobuf, "Invalid flag %c expression %s", arg,
                            scratch);
-                sendto_one(cptr, getreply(RPL_COMMANDSYNTAX), me.name,
+              sendto_one(&me, cptr, getreply(RPL_COMMANDSYNTAX), me.name,
                            cptr->name, rwhobuf);
-                sendto_one(cptr, getreply(RPL_COMMANDSYNTAX), me.name,
+              sendto_one(&me, cptr, getreply(RPL_COMMANDSYNTAX), me.name,
                            cptr->name, es);
                 break;
             }
@@ -309,7 +309,7 @@ static int rwho_parseopts(aClient *sptr, int parc, char *parv[])
 
     if (parc < 2)
     {
-        sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "RWHO",
+      sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "RWHO",
                    "rwho");
         return 0;
     }
@@ -318,9 +318,9 @@ static int rwho_parseopts(aClient *sptr, int parc, char *parv[])
     {
         const char **ptr;
         for (ptr = rwho_help; *ptr; ptr++)
-            sendto_one(sptr, getreply(RPL_COMMANDSYNTAX), me.name,
+          sendto_one(&me, sptr, getreply(RPL_COMMANDSYNTAX), me.name,
                        parv[0], *ptr);
-        sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, parv[0], "?","RWHO");
+      sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, parv[0], "?","RWHO");
         return 0;
     }
 
@@ -371,7 +371,7 @@ static int rwho_parseopts(aClient *sptr, int parc, char *parv[])
                 rwho_opts.chptr = find_channel(parv[arg], NULL);
                 if (!rwho_opts.chptr)
                 {
-                    sendto_one(sptr, getreply(ERR_NOSUCHCHANNEL), me.name,
+                  sendto_one(&me, sptr, getreply(ERR_NOSUCHCHANNEL), me.name,
                                parv[0], parv[arg]);
                     return 0;
                 }
@@ -598,7 +598,7 @@ static int rwho_parseopts(aClient *sptr, int parc, char *parv[])
                 rwho_opts.server = find_server(parv[arg], NULL);
                 if (!rwho_opts.server)
                 {
-                    sendto_one(sptr, getreply(ERR_NOSUCHSERVER), me.name,
+                  sendto_one(&me, sptr, getreply(ERR_NOSUCHSERVER), me.name,
                                sptr->name, parv[arg]);
                     return 0;
                 }
@@ -1300,7 +1300,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsAnOper(sptr))
     {
-        sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -1373,7 +1373,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 if (!left)
                 {
-                    sendto_one(sptr, getreply(ERR_WHOLIMEXCEED), me.name,
+                  sendto_one(&me, sptr, getreply(ERR_WHOLIMEXCEED), me.name,
                                parv[0], rwho_opts.limit, "RWHO");
                     break;
                 }
@@ -1381,7 +1381,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 if (!rwho_opts.countonly)
                 {
                     rwho_reply(sptr, fm, fill, NULL);
-                    sendto_one(sptr, "%s", rwhobuf);
+                  sendto_one(&me, sptr, "%s", rwhobuf);
                 }
 
                 results++;
@@ -1401,7 +1401,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 if (!rwho_opts.countonly)
                 {
                     rwho_reply(sptr, ac, fill, NULL);
-                    sendto_one(sptr, "%s", rwhobuf);
+                  sendto_one(&me, sptr, "%s", rwhobuf);
                 }
 
                 results++;
@@ -1414,7 +1414,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
                way to handle this case at present. */
             if (!left)
             {
-                sendto_one(sptr, getreply(ERR_WHOLIMEXCEED), me.name, parv[0],
+              sendto_one(&me, sptr, getreply(ERR_WHOLIMEXCEED), me.name, parv[0],
                            rwho_opts.limit, "RWHO");
                 break;
             }
@@ -1435,7 +1435,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
             if (!left)
             {
-                sendto_one(sptr, getreply(ERR_WHOLIMEXCEED), me.name, parv[0],
+              sendto_one(&me, sptr, getreply(ERR_WHOLIMEXCEED), me.name, parv[0],
                            rwho_opts.limit, "RWHO");
                 break;
             }
@@ -1443,7 +1443,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if (!rwho_opts.countonly)
             {
                 rwho_reply(sptr, ac, fill, cm);
-                sendto_one(sptr, "%s", rwhobuf);
+              sendto_one(&me, sptr, "%s", rwhobuf);
             }
 
             results++;
@@ -1462,7 +1462,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
             if (!left)
             {
-                sendto_one(sptr, getreply(ERR_WHOLIMEXCEED), me.name, parv[0],
+              sendto_one(&me, sptr, getreply(ERR_WHOLIMEXCEED), me.name, parv[0],
                            rwho_opts.limit, "RWHO");
                 break;
             }
@@ -1470,7 +1470,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if (!rwho_opts.countonly)
             {
                 rwho_reply(sptr, ac, fill, NULL);
-                sendto_one(sptr, "%s", rwhobuf);
+              sendto_one(&me, sptr, "%s", rwhobuf);
             }
 
             results++;
@@ -1483,7 +1483,7 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         ircsprintf(rwhobuf, "Search completed in %.03fs.",
                    ((double)(cend - cbegin)) / CLOCKS_PER_SEC);
-        sendto_one(sptr, getreply(RPL_COMMANDSYNTAX), me.name, sptr->name,
+      sendto_one(&me, sptr, getreply(RPL_COMMANDSYNTAX), me.name, sptr->name,
                    rwhobuf);
     }
     
@@ -1491,21 +1491,21 @@ int m_rwho(aClient *cptr, aClient *sptr, int parc, char *parv[])
         ircsprintf(rwhobuf, "%d:%s", results, rwho_opts.rplcookie);
     else
         ircsprintf(rwhobuf, "%d", results);
-    sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, parv[0], rwhobuf,"RWHO");
+  sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, parv[0], rwhobuf,"RWHO");
 
     if (failcode)
     {
         if (failcode == PCRE_ERROR_MATCHLIMIT)
         {
-            sendto_one(sptr, ":%s NOTICE %s :RWHO: Regex match pattern is too "
+          sendto_one(&me, sptr, ":%s NOTICE %s :RWHO: Regex match pattern is too "
                        "recursive, so some matches failed prematurely.  Use a "
                        "more specific pattern.", me.name, parv[0]);
         }
         else
         {
-            sendto_one(sptr, ":%s NOTICE %s :RWHO: Internal error %d during "
+          sendto_one(&me, sptr, ":%s NOTICE %s :RWHO: Internal error %d during "
                        "match, notify coders!", me.name, parv[0], failcode);
-            sendto_one(sptr, ":%s NOTICE %s :RWHO: Match target was: %s %s "
+          sendto_one(&me, sptr, ":%s NOTICE %s :RWHO: Match target was: %s %s "
                        "[%s] [%s]", me.name, parv[0], failclient->name,
                        failclient->user->username, failclient->info,
                        failclient->user->away ? failclient->user->away : "");

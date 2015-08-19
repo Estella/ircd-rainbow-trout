@@ -70,12 +70,12 @@ extern void send_quit_to_common_channels(aClient *from, char *reason);
 extern void send_part_to_common_channels(aClient *from, char *reason);
 extern void sendto_fdlist(fdlist *listp, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);
 extern void sendto_locops(char *pattern, ...) ATTRIBUTE_PRINTF(1, 2);
-extern void sendto_one(aClient *to, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);
+extern void sendto_one(aClient *from, aClient *to, char *pattern, ...) ATTRIBUTE_PRINTF(3, 4);
 extern void sendto_alias(AliasInfo *ai, aClient *from, char *pattern, ...) ATTRIBUTE_PRINTF(3, 4);
 extern void sendto_ops(char *pattern, ...) ATTRIBUTE_PRINTF(1, 2);
 extern void sendto_ops_butone(aClient *one, aClient *from, char *pattern, ...) ATTRIBUTE_PRINTF(3, 4);
 extern void sendto_ops_lev(int lev, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);
-extern void sendto_prefix_one(aClient *to, aClient *from, char *pattern, ...) ATTRIBUTE_PRINTF(3, 4);
+extern void sendto_prefix_one(aClient *from, aClient *to, char *pattern, ...) ATTRIBUTE_PRINTF(3, 4);
 
 extern void sendto_realops_lev(int lev, char *pattern, ...) ATTRIBUTE_PRINTF(2, 3);
 extern void sendto_realops(char *pattern, ...) ATTRIBUTE_PRINTF(1, 2);
@@ -91,8 +91,8 @@ extern void sendto_gnotice(char *pattern, ...) ATTRIBUTE_PRINTF(1, 2);
 extern void ts_warn(char *pattern, ...) ATTRIBUTE_PRINTF(1, 2);
 
 extern void vsendto_fdlist(fdlist *listp, char *pattern, va_list vl);
-extern void vsendto_one(aClient *to, char *pattern, va_list vl);
-extern void vsendto_prefix_one(aClient *to, aClient *from,
+extern void vsendto_one(aClient *from, aClient *to, char *pattern, va_list vl);
+extern void vsendto_prefix_one(aClient *from, aClient *to,
 			       char *pattern, va_list vl);
 extern void vsendto_realops(char *pattern, va_list vl);
 

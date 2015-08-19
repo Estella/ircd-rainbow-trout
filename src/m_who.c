@@ -122,9 +122,9 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
        ptr = who_oper_help;
 
       for (; *ptr; ptr++)
-	  sendto_one(sptr, getreply(RPL_COMMANDSYNTAX), me.name,
+	sendto_one(&me, sptr, getreply(RPL_COMMANDSYNTAX), me.name,
 		     sptr->name, *ptr);
-      sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name, "?","WHO");
+    sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name, "?","WHO");
       return 0;
   }
   /* backwards compatibility */
@@ -148,7 +148,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
 	  wsopts.channel=find_channel(parv[0],NullChn);
 	  if(wsopts.channel==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_NOSUCHCHANNEL), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_NOSUCHCHANNEL), me.name,
 			 sptr->name, parv[0]);
 	      return 0;
 	  }
@@ -242,7 +242,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'c':
 	  if(parv[args]==NULL || !change)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 			 sptr->name, "WHO", "who");
 	      return 0;
 	  }
@@ -272,7 +272,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
  
 	  if(wsopts.channel==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_NOSUCHCHANNEL), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_NOSUCHCHANNEL), me.name,
 			 sptr->name, parv[args]);
 	      return 0;
 	  }
@@ -282,13 +282,13 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'g':
           if(parv[args]==NULL)
           {
-              sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+            sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
                          sptr->name, "WHO", "who");
               return 0;
           }
           else if(!IsAnOper(sptr))
           {
-              sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+            sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
               return 0;
           }
           wsopts.gcos=parv[args];
@@ -298,7 +298,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'h':
 	  if(parv[args]==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 			 sptr->name, "WHO", "who");
 	      return 0;
 	  }
@@ -309,13 +309,13 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
        case 't':
           if(parv[args]==NULL || (rval = strtol(parv[args], &err, 0)) == 0 || *err != '\0')
           {
-              sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+            sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
                          sptr->name, "WHO", "who");
               return 0;
           }
           else if(!IsAnOper(sptr))
           {
-              sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+            sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
               return 0;
           }
           wsopts.ts = rval;
@@ -325,13 +325,13 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
        case 'T':
           if(parv[args]==NULL || (rval = strtol(parv[args], &err, 0)) == 0 || *err != '\0')
           {
-              sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+            sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
                          sptr->name, "WHO", "who");
               return 0;
           }
           else if(!IsAnOper(sptr))
           {
-              sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+            sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
               return 0;
           }
           wsopts.client_type = rval;
@@ -341,7 +341,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'I':
           if(!IsAnOper(sptr))
           {
-              sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+            sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
               return 0;
           }
           wsopts.ip_show = change;
@@ -349,13 +349,13 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'i':
           if(parv[args]==NULL)
           {
-              sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+            sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
                          sptr->name, "WHO", "who");
               return 0;
           }
           else if(!IsAnOper(sptr))
           {
-              sendto_one(sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
+            sendto_one(&me, sptr, getreply(ERR_NOPRIVILEGES), me.name, parv[0]);
               return 0;
           }
           else
@@ -384,7 +384,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
 		  }
 		  else
                   {
-                      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name,
+                    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name,
                          "WHO", "who");
                       return 0;
                   }
@@ -401,7 +401,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'm':
 	  if(parv[args]==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 			 sptr->name, "WHO", "who");
 	      return 0;
 	  }
@@ -418,7 +418,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
 	      }
               if(!user_modes[i])
               {
-                  sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+                sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
                              sptr->name, "WHO", "who");
                   return 0;
               }
@@ -434,7 +434,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'n':
 	  if(parv[args]==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 			 sptr->name, "WHO", "who");
 	      return 0;
 	  }
@@ -445,14 +445,14 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 's':
 	  if(parv[args]==NULL || !change)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 			 sptr->name, "WHO", "who");
 	      return 0;
 	  }
 	  wsopts.server=find_server(parv[args],NULL);
 	  if(wsopts.server==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_NOSUCHSERVER), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_NOSUCHSERVER), me.name,
 			 sptr->name, parv[args]);
 	      return 0;
 	  }
@@ -462,7 +462,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       case 'u':
 	  if(parv[args]==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 			 sptr->name, "WHO", "who");
 	      return 0;
 	  }
@@ -471,7 +471,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
 	  args++;
 	  break;
       default:
-	  sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name,
+	sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name,
 		     sptr->name, "WHO", "who");
 	  return 0;
 
@@ -493,7 +493,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       if(parv[args]==NULL || wsopts.channel || wsopts.nick ||
 	 parv[args][0] == '#' || parv[args][0] == '&')
       {
-	  sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
+	sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
                  "who");
 	  return 0;
       }
@@ -505,7 +505,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       }
       else
       {
-	  sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
+	sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
                  "who");
 	  return 0;
       }
@@ -520,7 +520,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
       {
 	  if(parv[args]==NULL)
 	  {
-	      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
+	    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
                      "who");
 	      return 0;
 	  }
@@ -540,7 +540,7 @@ int build_searchopts(aClient *sptr, int parc, char *parv[])
   if(parc > args)
   {
       /* Too many arguments */
-      sendto_one(sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
+    sendto_one(&me, sptr, getreply(ERR_WHOSYNTAX), me.name, sptr->name, "WHO",
              "who");
       return 0;
   }
@@ -815,7 +815,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		
 		if(shown==MAXWHOREPLIES && !IsAnOper(sptr))
 		{
-		    sendto_one(sptr, getreply(ERR_WHOLIMEXCEED), me.name,
+		  sendto_one(&me, sptr, getreply(ERR_WHOLIMEXCEED), me.name,
 			       sptr->name, MAXWHOREPLIES, "WHO");
 		    break;
 		}
@@ -856,7 +856,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    status[1]=(IsAnOper(ac) ? '*' : (IsInvisible(ac) && 
 					     IsAnOper(sptr) ? '%' : 0));
 	    status[2]=0;
-	    sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
+	  sendto_one(&me, sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 		       wsopts.show_chan ? first_visible_channel(ac, sptr) :
 		       "*", ac->user->username, WHO_HOST(ac),
 		       WHO_SERVER(sptr, ac), ac->name, status,
@@ -864,7 +864,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    shown++;
 	}
     }
-    sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
+  sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
 	       (wsopts.host!=NULL ? wsopts.host :
 		(wsopts.nick!=NULL ? wsopts.nick :
 		 (wsopts.user!=NULL ? wsopts.user :

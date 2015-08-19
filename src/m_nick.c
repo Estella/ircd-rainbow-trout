@@ -33,7 +33,7 @@
 #include "hooks.h"
 
 extern int do_user(char *, aClient *, aClient *, char *, char *, char *,
-		   unsigned long, char *, char *);
+		   unsigned long, char *, char *, int (*cb)CCB);
 
 extern int register_user(aClient *, aClient *, char *, char *, char *);
 extern int del_dccallow(aClient *, aClient *, int);
@@ -100,7 +100,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
   
     if (parc < 2)
     {
-	sendto_one(sptr, err_str(ERR_NONICKNAMEGIVEN),
+	sendto_one(&me, sptr, err_str(ERR_NONICKNAMEGIVEN),
 		   me.name, parv[0]);
 	return 0;
     }
@@ -143,7 +143,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
      */
     if (do_nick_name(nick) == 0 || (IsServer(cptr) && strcmp(nick, parv[1])))
     {
-	sendto_one(sptr, err_str(ERR_ERRONEUSNICKNAME),
+	sendto_one(&me, sptr, err_str(ERR_ERRONEUSNICKNAME),
 		   me.name, parv[0], parv[1], "Erroneous Nickname");
 	
 	if (IsServer(cptr))
@@ -152,7 +152,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
         sendto_realops_lev(DEBUG_LEV, "Bad Nick: %s From: %s Via: %s",
 			       parv[1], parv[0],
 			       get_client_name(cptr, HIDEME));
-	    sendto_one(cptr, ":%s KILL %s :%s (Bad Nick)",
+	  sendto_one(&me, cptr, ":%s KILL %s :%s (Bad Nick)",
 		       me.name, parv[1], me.name);
 	    if (sptr != cptr) { /* bad nick change */     
 		sendto_serv_butone(cptr, ":%s KILL %s :%s (Bad Nick)", me.name,
@@ -176,7 +176,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	if ((acptr = find_server(nick, NULL)))
 	    if (MyConnect(sptr))
 	    {
-		sendto_one(sptr, err_str(ERR_NICKNAMEINUSE), me.name,
+		sendto_one(&me, sptr, err_str(ERR_NICKNAMEINUSE), me.name,
 			   BadPtr(parv[0]) ? "*" : parv[0], nick);
 		return 0;
 	    }
@@ -201,7 +201,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	     */
 	    sendto_realops_lev(SKILL_LEV, "Nick collision on %s", sptr->name);
 	    ircstp->is_kill++;
-	    sendto_one(cptr, ":%s KILL %s :%s (Nick Collision)", me.name, 
+	  sendto_one(&me, cptr, ":%s KILL %s :%s (Nick Collision)", me.name, 
 		       sptr->name, me.name);
 	    sptr->flags |= FLAGS_KILLED;
 	    return exit_client(cptr, sptr, &me, "Nick/Server collision");
@@ -258,7 +258,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	     * error reply and ignore the command.
 	     * parv[0] is empty on connecting clients
 	     */
-	    sendto_one(sptr, err_str(ERR_NICKNAMEINUSE),
+	  sendto_one(&me, sptr, err_str(ERR_NICKNAMEINUSE),
 		       me.name, BadPtr(parv[0]) ? "*" : parv[0], nick);
 	    return 0;
 	}
@@ -307,7 +307,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 		    sendto_realops_lev(SKILL_LEV, "Nick collision on %s",parv[1]);
 		    ircstp->is_kill++;
-		    sendto_one(acptr, err_str(ERR_NICKCOLLISION),
+		  sendto_one(&me, acptr, err_str(ERR_NICKCOLLISION),
 			       me.name, acptr->name, acptr->name);
 		    sendto_serv_butone(sptr, ":%s KILL %s :%s (Nick Collision)",
 				       me.name, acptr->name, me.name);
@@ -329,7 +329,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	{
 	    sendto_realops_lev(SKILL_LEV, "Nick change collision: %s", parv[1]);
 	    ircstp->is_kill++;
-	    sendto_one(acptr, err_str(ERR_NICKCOLLISION),
+	  sendto_one(&me, acptr, err_str(ERR_NICKCOLLISION),
 		       me.name, acptr->name, acptr->name);
 	    sendto_serv_butone(NULL, ":%s KILL %s :%s (Nick Collision)",me.name,
 			       sptr->name, me.name);
@@ -431,12 +431,12 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    {
 		return do_user(nick, cptr, sptr, parv[5], parv[6],
 			       parv[7], strtoul(parv[8], NULL, 0),
-			       "0.0.0.0", parv[9]);
+			       "0.0.0.0", parv[9], NULL);
 	    } else if (parc==11)
 	    {
 		return do_user(nick, cptr, sptr, parv[5], parv[6], parv[7],
 			       strtoul(parv[8], NULL, 0),
-			       parv[9], parv[10]);
+			       parv[9], parv[10], NULL);
 	    }
 	}
     }
@@ -461,7 +461,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (MyConnect(sptr) && (!IsServer(cptr)) && (!IsOper(cptr))
 		    && (!IsULine(sptr)))
 		{
-		    sendto_one(sptr, err_str(ERR_ERRONEUSNICKNAME), me.name,
+		  sendto_one(&me, sptr, err_str(ERR_ERRONEUSNICKNAME), me.name,
 			       BadPtr(parv[0]) ? "*" : parv[0], nick,
 			       BadPtr(ban->reason) ? "Erroneous Nickname" :
 			       ban->reason);
@@ -489,13 +489,19 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		{
 		    if (can_send(sptr, lp->value.chptr, NULL))
 		    { 
-			sendto_one(sptr, err_str(ERR_BANNICKCHANGE), me.name,
+			sendto_one(&me, sptr, err_str(ERR_BANNICKCHANGE), me.name,
 				   sptr->name, lp->value.chptr->chname);
 			return 0;
 		    }
 		    if (nick_is_banned(lp->value.chptr, nick, sptr) != NULL)
 		    {
-			sendto_one(sptr, err_str(ERR_BANONCHAN), me.name,
+			sendto_one(&me, sptr, err_str(ERR_BANONCHAN), me.name,
+				   sptr->name, nick, lp->value.chptr->chname);
+			return 0;
+		    }
+		    if (nick_is_quieted(lp->value.chptr, nick, sptr) != NULL)
+		    {
+			sendto_one(&me, sptr, err_str(ERR_BANONCHAN), me.name,
 				   sptr->name, nick, lp->value.chptr->chname);
 			return 0;
 		    }
@@ -509,7 +515,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (sptr->number_of_nick_changes > MAX_NICK_CHANGES && 
 		    !IsAnOper(sptr))
 		{
-		    sendto_one(sptr,
+		  sendto_one(&me, sptr,
 			       ":%s NOTICE %s :*** Notice -- Too many nick "
 			       "changes. Wait %d seconds before trying again.",
 			       me.name, sptr->name, MAX_NICK_TIME);
@@ -594,7 +600,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     continue;
                 if(!find_shared_chan(sptr, lp->value.cptr))
                 {
-                    sendto_one(lp->value.cptr, ":%s %d %s :%s has been removed from "
+                  sendto_one(&me, lp->value.cptr, ":%s %d %s :%s has been removed from "
                                "your DCC allow list for signing off",
                                me.name, RPL_DCCINFO, lp->value.cptr->name, parv[0]);
                     del_dccallow(lp->value.cptr, sptr, 1);
@@ -612,7 +618,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		if (MyConnect(sptr) && (!IsServer(cptr)) && (!IsOper(cptr))
 		    && (!IsULine(sptr)))
 		{
-		    sendto_one(sptr, err_str(ERR_ERRONEUSNICKNAME), me.name,
+		  sendto_one(&me, sptr, err_str(ERR_ERRONEUSNICKNAME), me.name,
 			       BadPtr(parv[0]) ? "*" : parv[0], nick,
 			       BadPtr(ban->reason) ? "Erroneous Nickname" :
 			       ban->reason);

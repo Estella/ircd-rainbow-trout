@@ -426,7 +426,7 @@ clones_send(aClient *cptr)
     {
         if (!ce->limit)
             continue;
-        sendto_one(cptr, ":%s SVSCLONE %s %d", me.name, ce->ent, ce->limit);
+      sendto_one(&me, cptr, ":%s SVSCLONE %s %d", me.name, ce->ent, ce->limit);
     }
 }
 

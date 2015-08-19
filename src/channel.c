@@ -153,7 +153,7 @@ aClient *find_chasing(aClient *sptr, char *user, int *chasing)
         return who;
     if (!(who = get_history(user, (long) KILLCHASETIMELIMIT)))
     {
-        sendto_one(sptr, err_str(ERR_NOSUCHNICK),
+      sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK),
                    me.name, sptr->name, user);
         return ((aClient *) NULL);
     }
@@ -252,7 +252,7 @@ int add_exempt_id(aClient* cptr, aChannel* chptr, char* exempt_id)
         {
             if (++cnt >= MAXEXEMPTLIST)
             {
-                sendto_one(cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
+              sendto_one(&me, cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
                     chptr->chname, exempt_id, "exempt");
                 return -1;
             }
@@ -340,7 +340,7 @@ int add_invite_id(aClient* cptr, aChannel* chptr, char* invite_id)
         {
             if (++cnt >= MAXINVITELIST)
             {
-                sendto_one(cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
+              sendto_one(&me, cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
                     chptr->chname, invite_id, "invite");
                 return -1;
             }
@@ -438,7 +438,7 @@ static int add_banid(aClient *cptr, aChannel *chptr, char *banid)
         {
             if (++cnt >= MAXBANS)
             {
-                sendto_one(cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
+              sendto_one(&me, cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
                         chptr->chname, banid, "ban");
                 return -1;
             }
@@ -477,6 +477,8 @@ static int add_banid(aClient *cptr, aChannel *chptr, char *banid)
         else
             ban->type = MTYP_USERHOST;
     }
+    else if (banid[0] == '$')
+        ban->type = MTYP_EXT;
     else
         ban->type = MTYP_FULL;
 
@@ -505,7 +507,7 @@ static int add_quietid(aClient *cptr, aChannel *chptr, char *banid)
         {
             if (++cnt >= MAXBANS)
             {
-                sendto_one(cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
+              sendto_one(&me, cptr, getreply(ERR_BANLISTFULL), me.name, cptr->name,
                         chptr->chname, banid, "quiet");
                 return -1;
             }
@@ -1503,6 +1505,10 @@ int can_send(aClient *cptr, aChannel *chptr, char *msg)
                                 * channel is -n and user is not there;
                                 * we need to bquiet them if we can
                                 */
+            if (call_hooks(CHOOK_CHECKCANSPEAK, cptr, chptr, msg))
+                return (MODE_BAN);
+            if (call_hooks(CHOOK_CHECKCANJOIN, cptr, chptr))
+                return (MODE_BAN);
         }
     }
     else
@@ -1515,6 +1521,10 @@ int can_send(aClient *cptr, aChannel *chptr, char *msg)
             if (is_banned(cptr, chptr, cm))
                 return (MODE_BAN);
             if (is_quieted(cptr, chptr, cm))
+                return (MODE_BAN);
+            if (call_hooks(CHOOK_CHECKCANSPEAK, cptr, chptr, msg))
+                return (MODE_BAN);
+            if (call_hooks(CHOOK_CHECKCANJOIN, cptr, chptr))
                 return (MODE_BAN);
             if ((chptr->mode.mode & MODE_MODREG) && !IsRegNick(cptr))
                 return (ERR_NEEDREGGEDNICK);
@@ -1645,7 +1655,7 @@ static void send_channel_lists(aClient *cptr, aChannel *chptr)
 
         if (send) 
         {
-            sendto_one(cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
+          sendto_one(&me, cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
                            chptr->channelts, modebuf, parabuf);
             send = 0;
             *parabuf = '\0';
@@ -1682,7 +1692,7 @@ static void send_channel_lists(aClient *cptr, aChannel *chptr)
 
         if (send) 
         {
-            sendto_one(cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
+          sendto_one(&me, cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
                            chptr->channelts, modebuf, parabuf);
             send = 0;
             *parabuf = '\0';
@@ -1719,7 +1729,7 @@ static void send_channel_lists(aClient *cptr, aChannel *chptr)
         
         if (send)
         {
-            sendto_one(cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
+          sendto_one(&me, cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
                            chptr->channelts, modebuf, parabuf);
             send = 0;
             *parabuf = 0;
@@ -1756,7 +1766,7 @@ static void send_channel_lists(aClient *cptr, aChannel *chptr)
         
         if (send)
         {
-            sendto_one(cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
+          sendto_one(&me, cptr, ":%s MODE %s %ld %s %s", me.name, chptr->chname,
                            chptr->channelts, modebuf, parabuf);
             send = 0;
             *parabuf = 0;
@@ -1838,7 +1848,7 @@ void send_channel_modes(aClient *cptr, aChannel *chptr)
             *t++ = '\0';
             if (t[-1] == ' ')
                 t[-1] = '\0';
-            sendto_one(cptr, "%s", buf);
+          sendto_one(&me, cptr, "%s", buf);
             sprintf(buf, ":%s SJOIN %ld %s 0 :", me.name,
                     chptr->channelts, chptr->chname);
             t = buf + strlen(buf);
@@ -1851,14 +1861,14 @@ void send_channel_modes(aClient *cptr, aChannel *chptr)
         *t++ = '\0';
         if (t[-1] == ' ')
             t[-1] = '\0';
-        sendto_one(cptr, "%s", buf);
+      sendto_one(&me, cptr, "%s", buf);
     }
     *parabuf = '\0';
     *modebuf = '+';
     modebuf[1] = '\0';
     send_channel_lists(cptr, chptr);
     if (modebuf[1] || *parabuf)
-        sendto_one(cptr, ":%s MODE %s %ld %s %s",
+      sendto_one(&me, cptr, ":%s MODE %s %ld %s %s",
                 me.name, chptr->chname, chptr->channelts, modebuf, parabuf);
 }
 
@@ -1879,7 +1889,7 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
     else
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "MODE");
         return 0;
     }
@@ -1904,9 +1914,9 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
         *modebuf = *parabuf = '\0';
         modebuf[1] = '\0';
         channel_modes(sptr, modebuf, parabuf, chptr);
-        sendto_one(sptr, rpl_str(RPL_CHANNELMODEIS), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_CHANNELMODEIS), me.name, parv[0],
                    chptr->chname, modebuf, parabuf);
-        sendto_one(sptr, rpl_str(RPL_CREATIONTIME), me.name, parv[0],
+      sendto_one(&me, sptr, rpl_str(RPL_CREATIONTIME), me.name, parv[0],
                    chptr->chname, chptr->channelts);
         return 0;
     }
@@ -1929,7 +1939,7 @@ int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 break;
             case -1:
                 if (MyClient(sptr))
-                    sendto_one(sptr,
+                  sendto_one(&me, sptr,
                            err_str(ERR_CHANOPRIVSNEEDED),
                            me.name, parv[0], chptr->chname);
                 else
@@ -2017,7 +2027,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
        duplicate checking will have to wait for a protocol change to kill
        desyncs */
     int seenalready = 0;
-
+    int extban = 0;
 
     args=1;
         
@@ -2030,6 +2040,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
 
     while(*modes) 
     {
+        extban = 0;
         switch(*modes) 
         {
         case '+':
@@ -2114,7 +2125,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             cm = find_user_member(chptr->members, who);
             if(cm == NULL) 
             {
-                sendto_one(sptr, err_str(ERR_USERNOTINCHANNEL),
+              sendto_one(&me, sptr, err_str(ERR_USERNOTINCHANNEL),
                            me.name, cptr->name, parv[args], chptr->chname);
                 /* swallow the arg */
                 args++;
@@ -2163,9 +2174,9 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                     break;
 
                 for (invite = chptr->invite_list; invite; invite = invite->next)
-                    sendto_one(sptr, rpl_str(RPL_INVITELIST), me.name, cptr->name,
+                  sendto_one(&me, sptr, rpl_str(RPL_INVITELIST), me.name, cptr->name,
                                chptr->chname, invite->invstr, invite->who, invite->when);
-                sendto_one(cptr, rpl_str(RPL_ENDOFINVITELIST), me.name,
+              sendto_one(&me, cptr, rpl_str(RPL_ENDOFINVITELIST), me.name,
                            cptr->name, chptr->chname);
                 anylistsent = 1;
                 break;
@@ -2183,10 +2194,19 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 break;
             }
 
+            if (parv[args][0] == '$') extban = 1;
+
+            if (extban) {
+                if (parv[args][2] != ';') {
+                    args++; // Incorrect delimiter
+                    break;
+                }
+            }
+
 #ifdef NO_LOCAL_CIDR_CHANNELBANS
             if(MyClient(sptr) && strchr(parv[args],'/'))
             {
-                sendto_one(sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
+              sendto_one(&me, sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
                            me.name, sptr->name);
                 args++;
                 break;
@@ -2234,9 +2254,9 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 if (anylistsent) /* don't send the list if they have received one */
                     break;
                 for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
-                    sendto_one(sptr, rpl_str(RPL_EXEMPTLIST), me.name, cptr->name,
+                  sendto_one(&me, sptr, rpl_str(RPL_EXEMPTLIST), me.name, cptr->name,
                                chptr->chname, exempt->banstr, exempt->who, exempt->when);
-                sendto_one(cptr, rpl_str(RPL_ENDOFEXEMPTLIST), me.name,
+              sendto_one(&me, cptr, rpl_str(RPL_ENDOFEXEMPTLIST), me.name,
                            cptr->name, chptr->chname);
                 anylistsent = 1;
                 break;
@@ -2254,10 +2274,19 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 break;
             }
 
+            if (parv[args][0] == '$') extban = 1;
+
+            if (extban) {
+                if (parv[args][2] != ';') {
+                    args++; // Incorrect delimiter
+                    break;
+                }
+            }
+
 #ifdef NO_LOCAL_CIDR_CHANNELBANS
             if(MyClient(sptr) && strchr(parv[args],'/'))
             {
-                sendto_one(sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
+              sendto_one(&me, sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
                            me.name, sptr->name);
                 args++;
                 break;
@@ -2305,9 +2334,9 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 if (anylistsent)
                     break;
                 for(bp=chptr->banlist;bp;bp=bp->next)
-                    sendto_one(sptr, rpl_str(RPL_BANLIST), me.name, cptr->name,
+                  sendto_one(&me, sptr, rpl_str(RPL_BANLIST), me.name, cptr->name,
                                chptr->chname, bp->banstr, bp->who, bp->when);
-                sendto_one(cptr, rpl_str(RPL_ENDOFBANLIST), me.name,
+              sendto_one(&me, cptr, rpl_str(RPL_ENDOFBANLIST), me.name,
                            cptr->name, chptr->chname);
                 anylistsent = 1;
                 break; /* we don't pass this along, either.. */
@@ -2326,10 +2355,19 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 break;
             }
 
+            if (parv[args][0] == '$') extban = 1;
+
+            if (extban) {
+                if (parv[args][2] != ';') {
+                    args++; // Incorrect delimiter
+                    break;
+                }
+            }
+
 #ifdef NO_LOCAL_CIDR_CHANNELBANS
             if(MyClient(sptr) && strchr(parv[args],'/'))
             {
-                sendto_one(sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
+              sendto_one(&me, sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
                            me.name, sptr->name);
                 args++;
                 break;
@@ -2383,9 +2421,9 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 if (anylistsent)
                     break;
                 for(qp=chptr->quietlist;qp;qp=qp->next)
-                    sendto_one(sptr, ":%s 728 %s %s q %s %s %lu", me.name, cptr->name,
+                  sendto_one(&me, sptr, ":%s 728 %s %s q %s %s %lu", me.name, cptr->name,
                                chptr->chname, qp->banstr, qp->who, qp->when);
-                sendto_one(cptr, ":%s 729 %s %s :End of channel mute list.", me.name,
+              sendto_one(&me, cptr, ":%s 729 %s %s :End of channel mute list.", me.name,
                            cptr->name, chptr->chname);
                 anylistsent = 1;
                 break; /* we don't pass this along, either.. */
@@ -2404,10 +2442,19 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 break;
             }
 
+            if (parv[args][0] == '$') extban = 1;
+
+            if (extban) {
+                if (parv[args][2] != ';') {
+                    args++; // Incorrect delimiter
+                    break;
+                }
+            }
+
 #ifdef NO_LOCAL_CIDR_CHANNELBANS
             if(MyClient(sptr) && strchr(parv[args],'/'))
             {
-                sendto_one(sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
+              sendto_one(&me, sptr,":%s NOTICE %s :*** Notice -- CIDR channel bans/invites/exempts are not supported yet.",
                            me.name, sptr->name);
                 args++;
                 break;
@@ -2450,7 +2497,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
 #ifdef JOINRATE_SERVER_ONLY
             if (MyClient(sptr)) 
             {
-                sendto_one(sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
+              sendto_one(&me, sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
                            me.name, cptr->name, chptr->chname);
                 break;
             }
@@ -2729,7 +2776,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             seenalready |= MODE_REGISTERED;
             if (!IsServer(sptr) && !IsULine(sptr)) 
             {
-                sendto_one(sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
+              sendto_one(&me, sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
                            me.name, cptr->name, chptr->chname);
                 break;
             }
@@ -2753,7 +2800,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             seenalready |= MODE_AUDITORIUM;
             if (MyClient(sptr))
             {
-                sendto_one(sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
+              sendto_one(&me, sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
                            me.name, cptr->name, chptr->chname);
                 break;
             }
@@ -2777,7 +2824,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             seenalready |= MODE_LISTED;
             if (MyClient(sptr))
             {
-                sendto_one(sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
+              sendto_one(&me, sptr, err_str(ERR_ONLYSERVERSCANCHANGE),
                            me.name, cptr->name, chptr->chname);
                 break;
             }
@@ -2842,7 +2889,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
                 /* but only to our own clients, silently ignore bogosity
                  * from other servers... */
                 if(MyClient(sptr))
-                    sendto_one(sptr, err_str(ERR_UNKNOWNMODE), me.name,
+                  sendto_one(&me, sptr, err_str(ERR_UNKNOWNMODE), me.name,
                                sptr->name, *modes);
                         
             }
@@ -2854,7 +2901,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
         {
             moreparmsstr[5]=change;
             moreparmsstr[6]=*modes;
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
                        sptr->name, moreparmsstr);
             errors &= ~SM_ERR_MOREPARMS; /* oops, kill it in this case */
         }
@@ -2869,12 +2916,12 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
     if(MyClient(sptr)) 
     {
         if(errors & SM_ERR_NOPRIVS)
-            sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name,
+          sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name,
                        sptr->name, chptr->chname);        
         if(errors & SM_ERR_NOTOPER)
-            sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, sptr->name);
+          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, sptr->name);
         if(errors & SM_ERR_RESTRICTED)
-            sendto_one(sptr,":%s NOTICE %s :*** Notice -- You are "
+          sendto_one(&me, sptr,":%s NOTICE %s :*** Notice -- You are "
                        "restricted and cannot chanop others",
                        me.name, sptr->name);
     }
@@ -2943,6 +2990,8 @@ static int can_join(aClient *sptr, aChannel *chptr, char *key)
 
     if (!error && is_banned(sptr, chptr, NULL))
         error = ERR_BANNEDFROMCHAN;
+    if (call_hooks(CHOOK_CHECKCANJOIN, sptr, chptr))
+        error = ERR_BANNEDFROMCHAN;
 
     if (error)
     {
@@ -2950,11 +2999,11 @@ static int can_join(aClient *sptr, aChannel *chptr, char *key)
             joinrate_warn(chptr, sptr);
 
         if (error==ERR_NEEDREGGEDNICK)
-            sendto_one(sptr, getreply(ERR_NEEDREGGEDNICK), me.name, sptr->name,
+          sendto_one(&me, sptr, getreply(ERR_NEEDREGGEDNICK), me.name, sptr->name,
                        chptr->chname, "join", aliastab[AII_NS].nick,
                        aliastab[AII_NS].server, NS_Register_URL);
         else
-            sendto_one(sptr, getreply(error), me.name, sptr->name,
+          sendto_one(&me, sptr, getreply(error), me.name, sptr->name,
                        chptr->chname, r);
         return 0;
     }
@@ -3040,7 +3089,7 @@ int check_channelname(aClient *cptr, unsigned char *cn)
     {
         if(*cn<33 || *cn == ',' || *cn==160) 
         {
-            sendto_one(cptr, getreply(ERR_BADCHANNAME), me.name, cptr->name,
+          sendto_one(&me, cptr, getreply(ERR_BADCHANNAME), me.name, cptr->name,
                        cn);
             return 0;
         }
@@ -3262,7 +3311,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
         
     if (parc < 2 || *parv[1] == '\0')
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "JOIN");
         return 0;
     }
@@ -3299,7 +3348,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
         else if (!IsChannelName(name))
         {
             if (MyClient(sptr))
-                sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL),
+              sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL),
                            me.name, parv[0], name);
             continue;
         }
@@ -3390,7 +3439,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
             /* have we quarantined this channel? */
             if(!IsOper(sptr) && (ban = check_mask_simbanned(name, SBAN_CHAN)))
             {
-                sendto_one(sptr, getreply(ERR_CHANBANREASON), me.name, parv[0], name,
+              sendto_one(&me, sptr, getreply(ERR_CHANBANREASON), me.name, parv[0], name,
                         BadPtr(ban->reason) ? "Reserved channel" :      
                         ban->reason);
                 if (call_hooks(CHOOK_FORBID, cptr, name, ban) != FLUSH_BUFFER)
@@ -3414,7 +3463,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 (!IsAnOper(sptr) || (sptr->user->joined >= 
                                      maxchannelsperuser * 3)))
             {
-                sendto_one(sptr, err_str(ERR_TOOMANYCHANNELS),
+              sendto_one(&me, sptr, err_str(ERR_TOOMANYCHANNELS),
                            me.name, parv[0], name);
 #ifdef ANTI_SPAMBOT
                 if (successful_join_count)
@@ -3488,7 +3537,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
  */
 
         if (flags && !allow_op)
-            sendto_one(sptr, ":%s NOTICE %s :*** Notice -- Due to a network "
+          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- Due to a network "
                        "split, you can not obtain channel operator status in "
                        "a new channel at this time.", me.name, sptr->name);
         
@@ -3527,9 +3576,9 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
             del_invite(sptr, chptr);
             if (chptr->topic[0] != '\0') 
             {
-                sendto_one(sptr, rpl_str(RPL_TOPIC), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_TOPIC), me.name,
                            parv[0], name, chptr->topic);
-                sendto_one(sptr, rpl_str(RPL_TOPICWHOTIME),
+              sendto_one(&me, sptr, rpl_str(RPL_TOPICWHOTIME),
                            me.name, parv[0], name,
                            chptr->topic_nick,
                            chptr->topic_time);
@@ -3563,13 +3612,13 @@ int m_sajoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if(!IsSAdmin(sptr))
         {
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
                 return 0;
         }
 
         if (parc < 2 || *parv[1] == '\0')
         {
-                sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+              sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                            me.name, parv[0], "SAJOIN");
                 return 0;
         }
@@ -3579,7 +3628,7 @@ int m_sajoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
         chptr = find_channel(name, NULL);
         if(!chptr)
         {
-                sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL),
+              sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL),
                            me.name, parv[0], name);
                 return 0;
         }
@@ -3596,7 +3645,7 @@ int m_sajoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                me.name, sptr->name, chptr->chname, errmodebuf);
         }
         else
-            sendto_one(sptr, ":%s NOTICE %s :You didn't need to use"
+          sendto_one(&me, sptr, ":%s NOTICE %s :You didn't need to use"
                        " /SAJOIN for %s", me.name, parv[0], chptr->chname);
 
         add_user_to_channel(chptr, sptr, 0);
@@ -3606,9 +3655,9 @@ int m_sajoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
         {
             if(chptr->topic[0] != '\0')
             {
-                sendto_one(sptr, rpl_str(RPL_TOPIC), me.name, parv[0], 
+              sendto_one(&me, sptr, rpl_str(RPL_TOPIC), me.name, parv[0], 
                             name, chptr->topic);
-                sendto_one(sptr, rpl_str(RPL_TOPICWHOTIME), me.name, parv[0], 
+              sendto_one(&me, sptr, rpl_str(RPL_TOPICWHOTIME), me.name, parv[0], 
                             name, chptr->topic_nick, chptr->topic_time);
             }
             parv[1] = name;
@@ -3632,7 +3681,7 @@ int m_part(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || parv[1][0] == '\0')
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "PART");
         return 0;
     }
@@ -3685,7 +3734,7 @@ int m_part(aClient *cptr, aClient *sptr, int parc, char *parv[])
         chptr = get_channel(sptr, name, 0, NULL);
         if (!chptr)
         {
-            sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL),
+          sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL),
                        me.name, parv[0], name);
             name = strtoken(&p, (char *) NULL, ",");
             continue;
@@ -3693,7 +3742,7 @@ int m_part(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if (!IsMember(sptr, chptr))
         {
-            sendto_one(sptr, err_str(ERR_NOTONCHANNEL),
+          sendto_one(&me, sptr, err_str(ERR_NOTONCHANNEL),
                        me.name, parv[0], name);
             name = strtoken(&p, (char *) NULL, ",");
             continue;
@@ -3734,7 +3783,7 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 3 || *parv[1] == '\0')
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "KICK");
         return 0;
     }
@@ -3753,7 +3802,7 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
         chptr = get_channel(sptr, name, !CREATE, NULL);
         if (!chptr)
         {
-            sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL),
+          sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL),
                        me.name, parv[0], name);
             name = strtoken(&p, (char *) NULL, ",");
             continue;
@@ -3779,7 +3828,7 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 /* user on _my_ server, with no chanops.. so go away */
 
-                sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+              sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED),
                            me.name, parv[0], chptr->chname);
                 name = strtoken(&p, (char *) NULL, ",");
                 continue;
@@ -3789,7 +3838,7 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 /* If its a TS 0 channel, do it the old way */
 
-                sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+              sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED),
                            me.name, parv[0], chptr->chname);
                 name = strtoken(&p, (char *) NULL, ",");
                 continue;
@@ -3848,9 +3897,9 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     if (MyConnect(sptr))
                     {
                         /* user on _my_ server, with no chanops.. so go away */
-                        sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+                      sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED),
                                    me.name, parv[0], chptr->chname);
-                        sendto_one(who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only a halfop, so they failed.", me.name, parv[0], sptr->name, who->name);
+                      sendto_one(&me, who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only a halfop, so they failed.", me.name, parv[0], sptr->name, who->name);
                         name = strtoken(&p, (char *) NULL, ",");
                         continue;
                     }
@@ -3861,9 +3910,9 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     if (MyConnect(sptr))
                     {
                         /* user on _my_ server, with no chanops.. so go away */
-                        sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED),
+                      sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED),
                                    me.name, parv[0], chptr->chname);
-                        sendto_one(who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only an op (and you're a super), so they failed.", me.name, parv[0], sptr->name, who->name);
+                      sendto_one(&me, who, ":%s NOTICE %s :Hey, %s tried to kick you (%s) from this channel but they're only an op (and you're a super), so they failed.", me.name, parv[0], sptr->name, who->name);
                         name = strtoken(&p, (char *) NULL, ",");
                         continue;
                     }
@@ -3873,7 +3922,7 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     sendto_channelopvoice_butserv_me(chptr, sptr,
                                                      ":%s KICK %s %s :%s", parv[0],
                                                      name, who->name, comment);
-                    sendto_one(who, ":%s KICK %s %s :%s", parv[0], name, who->name, comment);
+                  sendto_one(&me, who, ":%s KICK %s %s :%s", parv[0], name, who->name, comment);
                 }
                 else
                     sendto_channel_butserv(chptr, sptr,
@@ -3884,7 +3933,7 @@ int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 remove_user_from_channel(who, chptr);
             }
             else
-                sendto_one(sptr, err_str(ERR_USERNOTINCHANNEL),
+              sendto_one(&me, sptr, err_str(ERR_USERNOTINCHANNEL),
                            me.name, parv[0], user, name);
             user = strtoken(&p2, (char *) NULL, ",");
         }                               /* loop on parv[2] */
@@ -3919,7 +3968,7 @@ void send_topic_burst(aClient *cptr)
             if(chptr->topic[0] != '\0')
             {
                 if(cptr->capabilities & CAPAB_NICKIPSTR)
-                    sendto_one(cptr, ":%s TOPIC %s %s %ld :%s", me.name, chptr->chname,
+                  sendto_one(&me, cptr, ":%s TOPIC %s %s %ld :%s", me.name, chptr->chname,
                                chptr->topic_nick, (long)chptr->topic_time,
 			       chptr->topic);
                 else
@@ -3930,7 +3979,7 @@ void send_topic_burst(aClient *cptr)
                     while(*tmpptr && *tmpptr!='!')
                         tnick[len++] = *(tmpptr++);
                     tnick[len] = '\0';
-                    sendto_one(cptr, ":%s TOPIC %s %s %ld :%s", me.name, chptr->chname,
+                  sendto_one(&me, cptr, ":%s TOPIC %s %s %ld :%s", me.name, chptr->chname,
                                tnick, (long)chptr->topic_time,
 			       chptr->topic);
                 }
@@ -3943,7 +3992,7 @@ void send_topic_burst(aClient *cptr)
             if(!IsPerson(acptr) || acptr->from == cptr)
                 continue;
             if(acptr->user->away)
-                sendto_one(cptr, ":%s AWAY :%s", acptr->name, acptr->user->away);
+              sendto_one(&me, cptr, ":%s AWAY :%s", acptr->name, acptr->user->away);
         }
 }
 
@@ -3962,7 +4011,7 @@ int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2) 
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "TOPIC");
         return 0;
     }
@@ -3971,7 +4020,7 @@ int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[])
     chptr = find_channel(name, NullChn);
     if(!chptr) 
     {
-        sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL), me.name, parv[0], name);
+      sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL), me.name, parv[0], name);
         return 0;
     }
     
@@ -3992,19 +4041,19 @@ int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[])
             }
             else
             {
-                sendto_one(sptr, err_str(ERR_NOTONCHANNEL), me.name, parv[0],
+              sendto_one(&me, sptr, err_str(ERR_NOTONCHANNEL), me.name, parv[0],
                            name);
                 return 0;
             }
         }
 
         if (chptr->topic[0] == '\0')
-            sendto_one(sptr, rpl_str(RPL_NOTOPIC), me.name, parv[0], namep);
+          sendto_one(&me, sptr, rpl_str(RPL_NOTOPIC), me.name, parv[0], namep);
         else 
         {
-            sendto_one(sptr, rpl_str(RPL_TOPIC), me.name, parv[0], namep,
+          sendto_one(&me, sptr, rpl_str(RPL_TOPIC), me.name, parv[0], namep,
                        chptr->topic);
-            sendto_one(sptr, rpl_str(RPL_TOPICWHOTIME), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_TOPICWHOTIME), me.name, parv[0],
                        namep, chptr->topic_nick, chptr->topic_time);
         }
         return 0;
@@ -4016,13 +4065,13 @@ int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (!member)
         {
-            sendto_one(sptr, err_str(ERR_NOTONCHANNEL), me.name, parv[0],name);
+          sendto_one(&me, sptr, err_str(ERR_NOTONCHANNEL), me.name, parv[0],name);
             return 0;
         }
 
         if ((chptr->mode.mode & MODE_TOPICLIMIT) && !is_chan_opsuper(sptr, chptr))
         {
-            sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0],
                        chptr->chname);
             return 0;
         }
@@ -4030,7 +4079,7 @@ int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[])
         /* if -t and banned, you can't change the topic */
         if (!(chptr->mode.mode & MODE_TOPICLIMIT) && !is_chan_op(sptr, chptr) && is_banned(sptr, chptr, NULL))
         {
-            sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0], chptr->chname);
+          sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0], chptr->chname);
             return 0;
         }
 
@@ -4087,14 +4136,14 @@ int m_invite(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (parc < 3 || *parv[1] == 0)
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "INVITE");
         return -1;
     }
 
     if (!(acptr = find_person(parv[1], NULL)))
     {
-        sendto_one(sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
+      sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
         return 0;
     }
 
@@ -4102,28 +4151,28 @@ int m_invite(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if (!(chptr = find_channel(parv[2], NULL)))
         {
-            sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL), me.name, parv[0],
                        parv[2]);
             return 0;
         }
 
         if (!IsMember(sptr, chptr))
         {
-            sendto_one(sptr, err_str(ERR_NOTONCHANNEL), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_NOTONCHANNEL), me.name, parv[0],
                        parv[2]);
             return 0;
         }
 
         if (IsMember(acptr, chptr))
         {
-            sendto_one(sptr, err_str(ERR_USERONCHANNEL), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_USERONCHANNEL), me.name, parv[0],
                        parv[1], chptr->chname);
             return 0;
         }
 
         if (!is_chan_op(sptr, chptr) && !is_chan_halfop(sptr, chptr) && !is_chan_superop(sptr, chptr))
         {
-            sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_CHANOPRIVSNEEDED), me.name, parv[0],
                        chptr->chname);
             return 0;
         }
@@ -4132,22 +4181,22 @@ int m_invite(aClient *cptr, aClient *sptr, int parc, char *parv[])
         {
             if (IsNoNonReg(acptr) && !IsRegNick(sptr))
             {
-                sendto_one(sptr, err_str(ERR_NONONREG), me.name, parv[0], acptr->name);
+              sendto_one(&me, sptr, err_str(ERR_NONONREG), me.name, parv[0], acptr->name);
                 return 0;
             }
 
             if (IsUmodeC(acptr) && (!IsNoNonReg(acptr) || IsRegNick(sptr)) && acptr->user->joined && !find_shared_chan(sptr, acptr))
             {
-                sendto_one(sptr, err_str(ERR_NOSHAREDCHAN), me.name, parv[0], acptr->name);
+              sendto_one(&me, sptr, err_str(ERR_NOSHAREDCHAN), me.name, parv[0], acptr->name);
                 return 0;
             }
         }
 
-        sendto_one(sptr, rpl_str(RPL_INVITING), me.name, parv[0], acptr->name,
+      sendto_one(&me, sptr, rpl_str(RPL_INVITING), me.name, parv[0], acptr->name,
                    chptr->chname);
 
         if (acptr->user->away)
-            sendto_one(sptr, rpl_str(RPL_AWAY), me.name, parv[0], acptr->name,
+          sendto_one(&me, sptr, rpl_str(RPL_AWAY), me.name, parv[0], acptr->name,
                        acptr->user->away);
     }
 
@@ -4176,7 +4225,7 @@ int m_invite(aClient *cptr, aClient *sptr, int parc, char *parv[])
         return 0;
     }
 
-    sendto_one(acptr, ":%s INVITE %s :%s", parv[0], parv[1], parv[2]);
+  sendto_one(&me, acptr, ":%s INVITE %s :%s", parv[0], parv[1], parv[2]);
 
     return 0;
 }
@@ -4251,12 +4300,12 @@ void send_list(aClient *cptr, int numsend)
                     else 
                         altchname = chptr->chname;
 
-                    sendto_one(cptr, rpl_str(RPL_LIST), me.name, cptr->name,
+                  sendto_one(&me, cptr, rpl_str(RPL_LIST), me.name, cptr->name,
                                altchname, chptr->users, chptr->topic);
                 } 
                 else 
                 {
-                    sendto_one(cptr, rpl_str(RPL_LIST), me.name, cptr->name,
+                  sendto_one(&me, cptr, rpl_str(RPL_LIST), me.name, cptr->name,
                                ShowChannel(cptr, chptr) ? chptr->chname : "*",
                                chptr->users,
                                ShowChannel(cptr, chptr) ? chptr->topic : "");
@@ -4272,7 +4321,7 @@ void send_list(aClient *cptr, int numsend)
     if (hashnum == CH_MAX)
     {
         Link *lp, *next;
-        sendto_one(cptr, rpl_str(RPL_LISTEND), me.name, cptr->name);
+      sendto_one(&me, cptr, rpl_str(RPL_LISTEND), me.name, cptr->name);
         for (lp = lopt->yeslist; lp; lp = next)
         {
             next = lp->next;
@@ -4343,14 +4392,14 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (IsSquelch(sptr)) 
     {
-        sendto_one(sptr, rpl_str(RPL_LISTEND), me.name, parv[0]);
+      sendto_one(&me, sptr, rpl_str(RPL_LISTEND), me.name, parv[0]);
         return 0;
     }
 
     /* If a /list is in progress, then another one will cancel it */
     if ((lopt = sptr->user->lopt)!=NULL)
     {
-        sendto_one(sptr, rpl_str(RPL_LISTEND), me.name, parv[0]);
+      sendto_one(&me, sptr, rpl_str(RPL_LISTEND), me.name, parv[0]);
         for (lp = lopt->yeslist; lp; lp = next)
         {
             next = lp->next;
@@ -4372,7 +4421,7 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (parc < 2 || BadPtr(parv[1]))
     {
 
-        sendto_one(sptr, rpl_str(RPL_LISTSTART), me.name, parv[0]);
+      sendto_one(&me, sptr, rpl_str(RPL_LISTSTART), me.name, parv[0]);
         lopt = sptr->user->lopt = (LOpts *) MyMalloc(sizeof(LOpts));
         memset(lopt, '\0', sizeof(LOpts));
 
@@ -4393,12 +4442,12 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         char **ptr = usage;
         for (; *ptr; ptr++)
-            sendto_one(sptr, rpl_str(RPL_COMMANDSYNTAX), me.name,
+          sendto_one(&me, sptr, rpl_str(RPL_COMMANDSYNTAX), me.name,
                        cptr->name, *ptr);
         return 0;
     }
 
-    sendto_one(sptr, rpl_str(RPL_LISTSTART), me.name, parv[0]);
+  sendto_one(&me, sptr, rpl_str(RPL_LISTSTART), me.name, parv[0]);
 
     chantimemax = topictimemax = currenttime + 86400;
     chantimemin = topictimemin = 0;
@@ -4442,7 +4491,7 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
                         doall = 1;
                         break;
                     default:
-                        sendto_one(sptr, err_str(ERR_LISTSYNTAX), me.name, 
+                      sendto_one(&me, sptr, err_str(ERR_LISTSYNTAX), me.name, 
                                 cptr->name);
                         error = 1;
                 }
@@ -4461,7 +4510,7 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
                         doall = 1;
                         break;
                     default:
-                        sendto_one(sptr, err_str(ERR_LISTSYNTAX), me.name, 
+                      sendto_one(&me, sptr, err_str(ERR_LISTSYNTAX), me.name, 
                                 cptr->name);
                         error = 1;
                 }
@@ -4509,7 +4558,7 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
                             nameptr = channame;
                         }
 
-                        sendto_one(sptr, rpl_str(RPL_LIST), me.name, parv[0],
+                      sendto_one(&me, sptr, rpl_str(RPL_LIST), me.name, parv[0],
                                nameptr, chptr->users, chptr->topic);
                     }
                 }
@@ -4537,7 +4586,7 @@ int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[])
         return 0;
     }
 
-    sendto_one(sptr, rpl_str(RPL_LISTEND), me.name, parv[0]);
+  sendto_one(&me, sptr, rpl_str(RPL_LISTEND), me.name, parv[0]);
 
     return 0;
 }
@@ -4569,7 +4618,7 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || !MyConnect(sptr)) 
     {
-        sendto_one(sptr, rpl_str(RPL_ENDOFNAMES), me.name, parv[0], "*");
+      sendto_one(&me, sptr, rpl_str(RPL_ENDOFNAMES), me.name, parv[0], "*");
         return 0;
     }
 
@@ -4581,7 +4630,7 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 para[TRUNCATED_NAMES] = '\0';
             sendto_realops("names abuser %s %s", get_client_name(sptr, FALSE),
                            para);
-            sendto_one(sptr, err_str(ERR_TOOMANYTARGETS), me.name, sptr->name,
+          sendto_one(&me, sptr, err_str(ERR_TOOMANYTARGETS), me.name, sptr->name,
                        "NAMES");
             return 0;
         }
@@ -4594,7 +4643,7 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!chptr || !ShowChannel(sptr, chptr))
     {
-        sendto_one(sptr, rpl_str(RPL_ENDOFNAMES), me.name, parv[0], para);
+      sendto_one(&me, sptr, rpl_str(RPL_ENDOFNAMES), me.name, parv[0], para);
         return 0;
     }
 
@@ -4643,16 +4692,16 @@ int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[])
         flag = 1;
         if(mlen + idx + NICKLEN > BUFSIZE - 3)
         {
-            sendto_one(sptr, rpl_str(RPL_NAMREPLY), me.name, parv[0], buf);
+          sendto_one(&me, sptr, rpl_str(RPL_NAMREPLY), me.name, parv[0], buf);
             idx = spos;
             flag = 0;
         }
     }
 
     if (flag) 
-        sendto_one(sptr, rpl_str(RPL_NAMREPLY), me.name, parv[0], buf);
+      sendto_one(&me, sptr, rpl_str(RPL_NAMREPLY), me.name, parv[0], buf);
     
-    sendto_one(sptr, rpl_str(RPL_ENDOFNAMES), me.name, parv[0], para);
+  sendto_one(&me, sptr, rpl_str(RPL_ENDOFNAMES), me.name, parv[0], para);
     
     return 0;
 }
@@ -4682,7 +4731,7 @@ void send_user_joins(aClient *cptr, aClient *user)
         if (clen > (size_t) BUFSIZE - 7 - len)
         {
             if (cnt)
-                sendto_one(cptr, "%s", buf);
+              sendto_one(&me, cptr, "%s", buf);
             *buf = ':';
             (void) strcpy(buf + 1, user->name);
             (void) strcat(buf, " JOIN ");
@@ -4699,7 +4748,7 @@ void send_user_joins(aClient *cptr, aClient *user)
         }
     }
     if (*buf && cnt)
-        sendto_one(cptr, "%s", buf);
+      sendto_one(&me, cptr, "%s", buf);
 
     return;
 }
@@ -5060,7 +5109,7 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                 "%s (%s!%s@%s[%s] created)", chptr->chname, 
                                 cptr->name, sptr->name, sptr->user->username,
                                 sptr->user->host, sptr->hostip);
-            sendto_one(cptr, "RESYNCH %s", chptr->chname);
+          sendto_one(&me, cptr, "RESYNCH %s", chptr->chname);
         }
 
         return 0;
@@ -5602,13 +5651,13 @@ int m_samode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsAnOper(sptr) || !IsSAdmin(sptr)) 
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
     if(parc < 3)
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS),
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS),
                    me.name, parv[0], "SAMODE");
         return 0;
     }

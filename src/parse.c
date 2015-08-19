@@ -38,12 +38,12 @@
 
 /* NOTE: parse() should not be called recursively by other functions! */
 static char *para[MAXPARA + 1];
-static int  cancel_clients(aClient *, aClient *, char *);
-static void remove_unknown(aClient *, char *, char *);
+int  cancel_clients(aClient *, aClient *, char *);
+void remove_unknown(aClient *, char *, char *);
 
 static char sender[HOSTLEN + 1];
-static int  cancel_clients(aClient *, aClient *, char *);
-static void remove_unknown(aClient *, char *, char *);
+int  cancel_clients(aClient *, aClient *, char *);
+void remove_unknown(aClient *, char *, char *);
 
 static struct Message *do_msg_tree(MESSAGE_TREE *, char *, struct Message *);
 static struct Message *tree_parse(char *);
@@ -360,7 +360,7 @@ int parse(aClient *cptr, char *buffer, char *bufend)
 	    if (buffer[0] != '\0') 
 	    {
 		if (IsPerson(from))
-		    sendto_one(from, ":%s %d %s %s :Unknown command",
+		  sendto_one(&me, from, ":%s %d %s %s :Unknown command",
 			       me.name, ERR_UNKNOWNCOMMAND, from->name, ch);
 		Debug((DEBUG_ERROR, "Unknown (%s) from %s",
 		       ch, get_client_name(cptr, TRUE)));
@@ -378,7 +378,7 @@ int parse(aClient *cptr, char *buffer, char *bufend)
 	 * are allowed -SRB Opers can send 1 msg per second, burst of ~20
 	 * -Taner
 	 */
-	if (!IsServer(cptr)) 
+	if (!IsServer(cptr) || (*(int **)(&cptr->cb) == NULL)) 
 	{
         if (!NoMsgThrottle(cptr))
         {
@@ -445,7 +445,7 @@ int parse(aClient *cptr, char *buffer, char *bufend)
     /* patch to avoid server flooding from unregistered connects */
     
     if (!IsRegistered(cptr) && !(mptr->flags & MF_UNREG)) {
-        sendto_one(from, err_str(ERR_NOTREGISTERED), me.name,
+      sendto_one(&me, from, err_str(ERR_NOTREGISTERED), me.name,
                    *para[0] ? para[0] : "*", ch);
         return -1;
     }
@@ -632,7 +632,7 @@ char *getfield(char *newline)
     return (field);
 }
 
-static int cancel_clients(aClient *cptr, aClient *sptr, char *cmd)
+int cancel_clients(aClient *cptr, aClient *sptr, char *cmd)
 {
     /*
      * kill all possible points that are causing confusion here, I'm not
@@ -730,7 +730,7 @@ static int cancel_clients(aClient *cptr, aClient *sptr, char *cmd)
     return exit_client(cptr, cptr, &me, "Fake prefix");
 }
 
-static void remove_unknown(aClient *cptr, char *sender, char *buffer)
+void remove_unknown(aClient *cptr, char *sender, char *buffer)
 {
     if (!IsRegistered(cptr))
 	return;
@@ -752,7 +752,7 @@ static void remove_unknown(aClient *cptr, char *sender, char *buffer)
      * Tell opers about this. -Taner
      */
     if (!strchr(sender, '.'))
-	sendto_one(cptr, ":%s KILL %s :%s (%s(?) <- %s)",
+	sendto_one(&me, cptr, ":%s KILL %s :%s (%s(?) <- %s)",
 		   me.name, sender, me.name, sender,
 		   get_client_name(cptr, HIDEME));
     else
@@ -760,7 +760,7 @@ static void remove_unknown(aClient *cptr, char *sender, char *buffer)
 	sendto_realops_lev(DEBUG_LEV, 
 			   "Unknown prefix (%s) from %s, Squitting %s",
 			   buffer, get_client_name(cptr, HIDEME), sender);
-	sendto_one(cptr, ":%s SQUIT %s :(Unknown prefix (%s) from %s)",
+	sendto_one(&me, cptr, ":%s SQUIT %s :(Unknown prefix (%s) from %s)",
 		   me.name, sender, buffer, get_client_name(cptr, HIDEME));
     }
 }

@@ -87,7 +87,7 @@ send_usage(aClient *cptr, char *nick)
 #endif
 
     if (getrusage(RUSAGE_SELF, &rus) == -1) {
-        sendto_one(cptr, ":%s NOTICE %s :Getruseage error: %s.",
+      sendto_one(&me, cptr, ":%s NOTICE %s :Getruseage error: %s.",
                    me.name, nick, sys_errlist[errno]);
         return;
     }
@@ -96,24 +96,24 @@ send_usage(aClient *cptr, char *nick)
     if (secs == 0)
         secs = 1;
 
-    sendto_one(cptr,
+  sendto_one(&me, cptr,
                ":%s %d %s :CPU Secs %d:%d User %d:%d System %d:%d",
                me.name, RPL_STATSDEBUG, nick, secs / 60, secs % 60,
                rus.ru_utime.tv_sec / 60, rus.ru_utime.tv_sec % 60,
                rus.ru_stime.tv_sec / 60, rus.ru_stime.tv_sec % 60);
-    sendto_one(cptr, ":%s %d %s :RSS %d ShMem %d Data %d Stack %d",
+  sendto_one(&me, cptr, ":%s %d %s :RSS %d ShMem %d Data %d Stack %d",
                me.name, RPL_STATSDEBUG, nick, rus.ru_maxrss,
                rus.ru_ixrss / (rup * hzz), rus.ru_idrss / (rup * hzz),
                rus.ru_isrss / (rup * hzz));
-    sendto_one(cptr, ":%s %d %s :Swaps %d Reclaims %d Faults %d",
+  sendto_one(&me, cptr, ":%s %d %s :Swaps %d Reclaims %d Faults %d",
                me.name, RPL_STATSDEBUG, nick, rus.ru_nswap,
                rus.ru_minflt, rus.ru_majflt);
-    sendto_one(cptr, ":%s %d %s :Block in %d out %d",
+  sendto_one(&me, cptr, ":%s %d %s :Block in %d out %d",
                me.name, RPL_STATSDEBUG, nick, rus.ru_inblock,
                rus.ru_oublock);
-    sendto_one(cptr, ":%s %d %s :Msg Rcv %d Send %d",
+  sendto_one(&me, cptr, ":%s %d %s :Msg Rcv %d Send %d",
                me.name, RPL_STATSDEBUG, nick, rus.ru_msgrcv, rus.ru_msgsnd);
-    sendto_one(cptr, ":%s %d %s :Signals %d Context Vol. %d Invol %d",
+  sendto_one(&me, cptr, ":%s %d %s :Signals %d Context Vol. %d Invol %d",
                me.name, RPL_STATSDEBUG, nick, rus.ru_nsignals,
                rus.ru_nvcsw, rus.ru_nivcsw);
 #else
@@ -133,28 +133,28 @@ send_usage(aClient *cptr, char *nick)
     mins = (secs / 60) + umin + smin;
     secs %= hzz;
     if (times(&tmsbuf) == -1) {
-        sendto_one(cptr, ":%s %d %s :times(2) error: %s.",
+      sendto_one(&me, cptr, ":%s %d %s :times(2) error: %s.",
                    me.name, RPL_STATSDEBUG, nick, strerror(errno));
         return;
     }
     secs = tmsbuf.tms_utime + tmsbuf.tms_stime;
 
-    sendto_one(cptr,
+  sendto_one(&me, cptr,
                ":%s %d %s :CPU Secs %d:%d User %d:%d System %d:%d",
                me.name, RPL_STATSDEBUG, nick, mins, secs, umin, usec,
                smin, ssec);
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
-    sendto_one(cptr, ":%s %d %s :Reads %d Writes %d",
+  sendto_one(&me, cptr, ":%s %d %s :Reads %d Writes %d",
                me.name, RPL_STATSDEBUG, nick, readcalls, writecalls);
-/*    sendto_one(cptr, ":%s %d %s :DBUF alloc %d used %d",
+/*  sendto_one(&me, cptr, ":%s %d %s :DBUF alloc %d used %d",
                me.name, RPL_STATSDEBUG, nick, DBufCount, DBufUsedCount);
                */
-    sendto_one(cptr,
+  sendto_one(&me, cptr,
                ":%s %d %s :Writes:  <0 %d 0 %d <16 %d <32 %d <64 %d",
                me.name, RPL_STATSDEBUG, nick,
                writeb[0], writeb[1], writeb[2], writeb[3], writeb[4]);
-    sendto_one(cptr,
+  sendto_one(&me, cptr,
                ":%s %d %s :<128 %d <256 %d <512 %d <1024 %d >1024 %d",
                me.name, RPL_STATSDEBUG, nick,
                writeb[5], writeb[6], writeb[7], writeb[8], writeb[9]);
@@ -178,7 +178,7 @@ show_opers(aClient *cptr, char *name)
     {
         if (cptr2->umode & UMODE_h)
         {
-        sendto_one(cptr, ":%s %d %s :%s (%s@%s) Idle: %ld",
+      sendto_one(&me, cptr, ":%s %d %s :%s (%s@%s) Idle: %ld",
                me.name, RPL_STATSDEBUG, name, cptr2->name,
                cptr2->user->username, cptr2->user->host,
                (long)(timeofday - cptr2->user->last));
@@ -187,14 +187,14 @@ show_opers(aClient *cptr, char *name)
     }
     else
     {
-        sendto_one(cptr, ":%s %d %s :%s (%s@%s) Idle: %ld",
+      sendto_one(&me, cptr, ":%s %d %s :%s (%s@%s) Idle: %ld",
                me.name, RPL_STATSDEBUG, name, cptr2->name,
                cptr2->user->username, cptr2->user->host,
                (long)(timeofday - cptr2->user->last));
         j++;
     }
     }
-    sendto_one(cptr, ":%s %d %s :%d OPER%s", me.name, RPL_STATSDEBUG,
+  sendto_one(&me, cptr, ":%s %d %s :%d OPER%s", me.name, RPL_STATSDEBUG,
            name, j, (j == 1) ? "" : "s");
 }
 
@@ -217,14 +217,14 @@ show_servers(aClient *cptr, char *name)
         continue;
 #endif
     j++;
-    sendto_one(cptr, ":%s %d %s :%s (%s!%s@%s) Idle: %ld",
+  sendto_one(&me, cptr, ":%s %d %s :%s (%s!%s@%s) Idle: %ld",
            me.name, RPL_STATSDEBUG, name, cptr2->name,
            (cptr2->serv->bynick[0] ? cptr2->serv->bynick : "Remote."),
            (cptr2->serv->byuser[0] ? cptr2->serv->byuser : "*"),
            (cptr2->serv->byhost[0] ? cptr2->serv->byhost : "*"),
            (long)(timeofday - cptr2->lasttime));
     }
-    sendto_one(cptr, ":%s %d %s :%d Server%s", me.name, RPL_STATSDEBUG,
+  sendto_one(&me, cptr, ":%s %d %s :%d Server%s", me.name, RPL_STATSDEBUG,
            name, j, (j == 1) ? "" : "s");
 }
 
@@ -263,7 +263,7 @@ serv_info(aClient *cptr, char *name)
 #endif
         sendK += acptr->sendK;
         receiveK += acptr->receiveK;
-        sendto_one(cptr, Lformat, me.name, RPL_STATSLINKINFO,
+      sendto_one(&me, cptr, Lformat, me.name, RPL_STATSLINKINFO,
                     name, ( (MyClient(cptr) && IsAdmin(cptr))
                             ? get_client_name(acptr, FALSE)
                             : get_client_name(acptr, HIDEME) ),
@@ -275,7 +275,7 @@ serv_info(aClient *cptr, char *name)
 
 
         if(RC4EncLink(acptr))
-            sendto_one(cptr, ":%s %d %s : - RC4 encrypted", me.name, 
+          sendto_one(&me, cptr, ":%s %d %s : - RC4 encrypted", me.name, 
                         RPL_STATSDEBUG, name);
 
         if(ZipOut(acptr))
@@ -286,7 +286,7 @@ serv_info(aClient *cptr, char *name)
             zip_out_get_stats(acptr->serv->zip_out, &ib, &ob, &rat);
             if(ib)
             {
-                sendto_one(cptr, ":%s %d %s : - [O] Zip inbytes %lu, "
+              sendto_one(&me, cptr, ":%s %d %s : - [O] Zip inbytes %lu, "
                             "outbytes %lu (%3.2f%%)", me.name, RPL_STATSDEBUG,
                              name, ib, ob, rat);
             }
@@ -300,27 +300,27 @@ serv_info(aClient *cptr, char *name)
             zip_in_get_stats(acptr->serv->zip_in, &ib, &ob, &rat);
             if(ob)
             {
-                sendto_one(cptr, ":%s %d %s : - [I] Zip inbytes %lu, "
+              sendto_one(&me, cptr, ":%s %d %s : - [I] Zip inbytes %lu, "
                             "outbytes %lu (%3.2f%%)", me.name, RPL_STATSDEBUG,
                              name, ib, ob, rat);
             }
         }
         i++;
     }
-    sendto_one(cptr, ":%s %d %s :%u total server%s",
+  sendto_one(&me, cptr, ":%s %d %s :%u total server%s",
            me.name, RPL_STATSDEBUG, name, i, (i == 1) ? "" : "s");
-    sendto_one(cptr, ":%s %d %s :Sent total : %7.2f %s",
+  sendto_one(&me, cptr, ":%s %d %s :Sent total : %7.2f %s",
            me.name, RPL_STATSDEBUG, name, _GMKv(sendK), _GMKs(sendK));
-    sendto_one(cptr, ":%s %d %s :Recv total : %7.2f %s",
+  sendto_one(&me, cptr, ":%s %d %s :Recv total : %7.2f %s",
            me.name, RPL_STATSDEBUG, name, _GMKv(receiveK),
            _GMKs(receiveK));
 
     uptime = (timeofday - me.since);
-    sendto_one(cptr, ":%s %d %s :Server send: %7.2f %s (%4.1f K/s total,"
+  sendto_one(&me, cptr, ":%s %d %s :Server send: %7.2f %s (%4.1f K/s total,"
                      " %4.1f K/s current)", me.name, RPL_STATSDEBUG, name,
                      _GMKv(me.sendK), _GMKs(me.sendK), 
                     (float) ((float) me.sendK / (float) uptime), curSendK);
-    sendto_one(cptr, ":%s %d %s :Server recv: %7.2f %s (%4.1f K/s total,"
+  sendto_one(&me, cptr, ":%s %d %s :Server recv: %7.2f %s (%4.1f K/s total,"
                      " %4.1f K/s current)", me.name, RPL_STATSDEBUG, name, 
                     _GMKv(me.receiveK), _GMKs(me.receiveK),
                     (float) ((float) me.receiveK / (float) uptime), curRecvK);
@@ -388,40 +388,40 @@ tstats(aClient *cptr, char *name)
             sp->is_ni++;
     }
 
-    sendto_one(cptr, ":%s %d %s :accepts %u refused %u",
+  sendto_one(&me, cptr, ":%s %d %s :accepts %u refused %u",
                me.name, RPL_STATSDEBUG, name, sp->is_ac, sp->is_ref);
-    sendto_one(cptr, ":%s %d %s :unknown commands %u prefixes %u",
+  sendto_one(&me, cptr, ":%s %d %s :unknown commands %u prefixes %u",
                me.name, RPL_STATSDEBUG, name, sp->is_unco, sp->is_unpf);
-    sendto_one(cptr, ":%s %d %s :nick collisions %u unknown closes %u",
+  sendto_one(&me, cptr, ":%s %d %s :nick collisions %u unknown closes %u",
                me.name, RPL_STATSDEBUG, name, sp->is_kill, sp->is_ni);
-    sendto_one(cptr, ":%s %d %s :wrong direction %u empty %u",
+  sendto_one(&me, cptr, ":%s %d %s :wrong direction %u empty %u",
                me.name, RPL_STATSDEBUG, name, sp->is_wrdi, sp->is_empt);
-    sendto_one(cptr, ":%s %d %s :numerics seen %u mode fakes %u",
+  sendto_one(&me, cptr, ":%s %d %s :numerics seen %u mode fakes %u",
                me.name, RPL_STATSDEBUG, name, sp->is_num, sp->is_fake);
-    sendto_one(cptr, ":%s %d %s :auth successes %u fails %u",
+  sendto_one(&me, cptr, ":%s %d %s :auth successes %u fails %u",
                me.name, RPL_STATSDEBUG, name, sp->is_asuc, sp->is_abad);
-    sendto_one(cptr, ":%s %d %s :local connections %u udp packets %u",
+  sendto_one(&me, cptr, ":%s %d %s :local connections %u udp packets %u",
                me.name, RPL_STATSDEBUG, name, sp->is_loc, sp->is_udp);
-    sendto_one(cptr, ":%s %d %s :drones refused %u throttled rejections %u",
+  sendto_one(&me, cptr, ":%s %d %s :drones refused %u throttled rejections %u",
                me.name, RPL_STATSDEBUG, name, sp->is_drone, sp->is_throt);
-    sendto_one(cptr, ":%s %d %s :banned users refused before ident/dns"
+  sendto_one(&me, cptr, ":%s %d %s :banned users refused before ident/dns"
                      " %u after ident/dns %u", me.name, RPL_STATSDEBUG, 
                      name, sp->is_ref_1, sp->is_ref_2);
-    sendto_one(cptr, ":%s %d %s :Client Server", 
+  sendto_one(&me, cptr, ":%s %d %s :Client Server", 
                      me.name, RPL_STATSDEBUG, name);
-    sendto_one(cptr, ":%s %d %s :connected %u %u",
+  sendto_one(&me, cptr, ":%s %d %s :connected %u %u",
                me.name, RPL_STATSDEBUG, name, sp->is_cl, sp->is_sv);
-    sendto_one(cptr, ":%s %d %s :bytes sent %lu.%dK %lu.%dK",
+  sendto_one(&me, cptr, ":%s %d %s :bytes sent %lu.%dK %lu.%dK",
                me.name, RPL_STATSDEBUG, name,
                sp->is_cks, sp->is_cbs, sp->is_sks, sp->is_sbs);
-    sendto_one(cptr, ":%s %d %s :bytes recv %lu.%dK %lu.%dK",
+  sendto_one(&me, cptr, ":%s %d %s :bytes recv %lu.%dK %lu.%dK",
                me.name, RPL_STATSDEBUG, name,
                sp->is_ckr, sp->is_cbr, sp->is_skr, sp->is_sbr);
-    sendto_one(cptr, ":%s %d %s :time connected %lu %lu",
+  sendto_one(&me, cptr, ":%s %d %s :time connected %lu %lu",
                me.name, RPL_STATSDEBUG, name,
 	       (long)sp->is_cti, (long)sp->is_sti);
 #ifdef FLUD
-    sendto_one(cptr, ":%s %d %s :CTCP Floods Blocked %u",
+  sendto_one(&me, cptr, ":%s %d %s :CTCP Floods Blocked %u",
                me.name, RPL_STATSDEBUG, name, sp->is_flud);
 #endif /* FLUD */
 }
@@ -455,14 +455,14 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #ifdef NO_USER_STATS
     if (!IsAnOper(sptr) && !IsULine(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 #else
 #ifdef NO_LOCAL_USER_STATS
     if (!IsAnOper(sptr) && !MyConnect(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 #endif
@@ -523,7 +523,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
          *     /trace, this was fiercely obnoxious.  If you don't
          *     add an argument, you get all SERVER links.
          */
-        sendto_one(sptr, Sformat, me.name, RPL_STATSLINKINFO, parv[0]);
+      sendto_one(&me, sptr, Sformat, me.name, RPL_STATSLINKINFO, parv[0]);
         if ((parc > 2) && !(doall || wilds))
         {         /* Single client lookup */
             if (!(acptr = find_person(name, NULL)))
@@ -535,7 +535,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
              */
             sincetime = (acptr->since > timeofday) ? 0 : 
                                 timeofday - acptr->since;
-            sendto_one(sptr, Lformat, me.name, RPL_STATSLINKINFO, parv[0],
+          sendto_one(&me, sptr, Lformat, me.name, RPL_STATSLINKINFO, parv[0],
                         get_client_name(acptr, TRUE),
                         (int) SBufLength(&acptr->sendQ),
                         (int) acptr->sendM, (int) acptr->sendK,
@@ -558,7 +558,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #endif
                 sincetime = (acptr->since > timeofday) ? 0 : 
                              timeofday - acptr->since;
-                sendto_one(sptr, Lformat, me.name, RPL_STATSLINKINFO, parv[0],
+              sendto_one(&me, sptr, Lformat, me.name, RPL_STATSLINKINFO, parv[0],
                         ( (MyClient(sptr) && IsAdmin(sptr))
                           ? get_client_name(acptr, FALSE)
                           : get_client_name(acptr, HIDEME) ),
@@ -578,7 +578,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
          */
 #ifdef HIDEULINEDSERVS
         if (!IsAnOper(sptr))
-            sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
         else
 #endif
         {
@@ -592,19 +592,19 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
                 if(IsULine(sptr) || (MyClient(sptr) && IsAdmin(sptr)))
                 {
-                    sendto_one(sptr, rpl_str(RPL_STATSCLINE), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSCLINE), me.name,
                            sptr->name, "C", tmp->host, tmp->name, tmp->port,
                            tmp->class->name);
-                    sendto_one(sptr, rpl_str(RPL_STATSNLINE), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSNLINE), me.name,
                            sptr->name, "N", tmp->host, tmp->name, tmp->flags,
                            tmp->uflags, tmp->class->name);
                 }
                 else
                 {
-                    sendto_one(sptr, rpl_str(RPL_STATSCLINE), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSCLINE), me.name,
                                sptr->name, "C", "*", tmp->name, tmp->port,
                                tmp->class->name);
-                    sendto_one(sptr, rpl_str(RPL_STATSNLINE), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSNLINE), me.name,
                                sptr->name, "N", "*", tmp->name, tmp->flags,
                                tmp->uflags, tmp->class->name);
                 }
@@ -614,14 +614,14 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         case 'D':
             if (!IsAnOper(sptr))
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             else
             {
                 CloneEnt *ce;
 
                 for (ce = clones_list; ce; ce = ce->next)
                     if (ce->limit || ce->sllimit || ce->sglimit)
-                        sendto_one(sptr, rpl_str(RPL_STATSCLONE), me.name,
+                      sendto_one(&me, sptr, rpl_str(RPL_STATSCLONE), me.name,
                                    parv[0], ce->ent, ce->sllimit, ce->sglimit,
                                    ce->limit);
             }
@@ -629,7 +629,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         case 'd':
             if (!IsAnOper(sptr))
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             else
             {
                 CloneEnt *ce;
@@ -667,30 +667,30 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 rtot = clones_stat.rlh + clones_stat.rls
                      + clones_stat.rgh + clones_stat.rgs;
 
-                sendto_one(sptr, ":%s %d %s :Default local host limit: %d"
+              sendto_one(&me, sptr, ":%s %d %s :Default local host limit: %d"
                            "  site: %d", me.name, RPL_STATSDEBUG, parv[0],
                            local_ip_limit, local_ip24_limit);
-                sendto_one(sptr, ":%s %d %s :Default global host limit: %d"
+              sendto_one(&me, sptr, ":%s %d %s :Default global host limit: %d"
                            "  site: %d", me.name, RPL_STATSDEBUG, parv[0],
                            global_ip_limit, global_ip24_limit);
 #endif
-                sendto_one(sptr, ":%s %d %s :Clone entries: %d", me.name,
+              sendto_one(&me, sptr, ":%s %d %s :Clone entries: %d", me.name,
                            RPL_STATSDEBUG, parv[0], entries);
 #ifdef THROTTLE_ENABLE
-                sendto_one(sptr, ":%s %d %s :    Active hosts: %d  sites: %d",
+              sendto_one(&me, sptr, ":%s %d %s :    Active hosts: %d  sites: %d",
                            me.name, RPL_STATSDEBUG, parv[0], active-sites,
                            sites);
-                sendto_one(sptr, ":%s %d %s :    Soft local limits: %d"
+              sendto_one(&me, sptr, ":%s %d %s :    Soft local limits: %d"
                            "  global: %d", me.name, RPL_STATSDEBUG, parv[0],
                            sllimits, sglimits);
-                sendto_one(sptr, ":%s %d %s :    Hard global limits: %d",
+              sendto_one(&me, sptr, ":%s %d %s :    Hard global limits: %d",
                            me.name, RPL_STATSDEBUG, parv[0], hlimits);
-                sendto_one(sptr, ":%s %d %s :Rejected connections: %lu",
+              sendto_one(&me, sptr, ":%s %d %s :Rejected connections: %lu",
                            me.name, RPL_STATSDEBUG, parv[0], rtot);
-                sendto_one(sptr, ":%s %d %s :    Local hosts: %lu  sites: %lu",
+              sendto_one(&me, sptr, ":%s %d %s :    Local hosts: %lu  sites: %lu",
                            me.name, RPL_STATSDEBUG, parv[0],
                            clones_stat.rlh, clones_stat.rls);
-                sendto_one(sptr, ":%s %d %s :    Global hosts: %lu  sites: %lu",
+              sendto_one(&me, sptr, ":%s %d %s :    Global hosts: %lu  sites: %lu",
                            me.name, RPL_STATSDEBUG, parv[0],
                            clones_stat.rgh, clones_stat.rgs);
 #endif
@@ -701,13 +701,13 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if(IsAnOper(sptr))
                 report_simbans_match_flags(sptr, SBAN_GCOS|SBAN_LOCAL, 0);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
         case 'g':
             if(IsAnOper(sptr))
                 report_simbans_match_flags(sptr, SBAN_GCOS|SBAN_NETWORK, 0);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'I':
@@ -720,7 +720,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 if (tmp->passwd && !(IsAnOper(sptr) || IsULine(sptr)))
                     continue;
-                sendto_one(sptr, rpl_str(RPL_STATSILINE), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_STATSILINE), me.name,
                            sptr->name, (tmp->legal == -1 ? "Ix" : "I"),
                            tmp->ipmask, tmp->flags, tmp->hostmask, tmp->port,
                            tmp->class->name);
@@ -731,14 +731,14 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if(IsAnOper(sptr))
                 report_userbans_match_flags(sptr, UBAN_TEMPORARY|UBAN_LOCAL, 0);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'K':
             if (IsAnOper(sptr))
                 report_userbans_match_flags(sptr, UBAN_LOCAL, UBAN_TEMPORARY);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'A':
@@ -746,7 +746,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if(IsAnOper(sptr))
                 report_userbans_match_flags(sptr, UBAN_NETWORK, 0);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'M':
@@ -759,19 +759,19 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
          */
             if(IsAnOper(sptr))
                 for (mptr = msgtab; mptr->cmd; mptr++)
-                    sendto_one(sptr, rpl_str(RPL_STATSCOMMANDS), me.name, 
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSCOMMANDS), me.name, 
                             parv[0], mptr->cmd, mptr->count, mptr->bytes);
             break;
 
         case 'N':
         case 'n':
-            sendto_one(sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
                         "User Connects Today: ", Count.today);
-            sendto_one(sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
                         "User Connects past week: ", Count.weekly);
-            sendto_one(sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
                         "User Connects past month: ", Count.monthly);
-            sendto_one(sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_STATSCOUNT), me.name, parv[0],
                         "User Connects past year: ", Count.yearly);
             break;
         case 'o':
@@ -785,7 +785,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 for(tmp = opers; tmp; tmp = tmp->next)
                     for(i = 0; tmp->hosts[i]; i++)
-                        sendto_one(sptr, rpl_str(RPL_STATSOLINE), me.name,
+                      sendto_one(&me, sptr, rpl_str(RPL_STATSOLINE), me.name,
                                 sptr->name, (tmp->legal == -1 ? "Ox" : "O"),
                                 tmp->hosts[i], tmp->nick, tmp->flags,
                                 tmp->class->name);
@@ -796,7 +796,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 {
                     if (tmp->legal == -1)
                         continue;
-                    sendto_one(sptr, rpl_str(RPL_STATSOLINE), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSOLINE), me.name,
                             sptr->name, "O", "*", tmp->nick, tmp->flags,
                             tmp->class->name);
                 }
@@ -816,7 +816,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 report_simbans_match_flags(sptr, SBAN_CHAN|SBAN_LOCAL, 0);
             }
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
         case 'q':
             if(IsAnOper(sptr))
@@ -825,7 +825,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 report_simbans_match_flags(sptr, SBAN_CHAN|SBAN_NETWORK, 0);
             }
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'R':
@@ -840,33 +840,33 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if (IsAnOper(sptr))
                 list_scache(cptr, sptr, parc, parv);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'T':
             if (IsAnOper(sptr)) 
                 throttle_stats(sptr, parv[0]);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 't':
             if (IsAnOper(sptr))
                 tstats(sptr, parv[0]);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 
         case 'U':
 #ifdef HIDEULINEDSERVS
             if (!IsOper(sptr))
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             else
 #endif
             {
                 int i;
                 for(i = 0; uservers[i]; i++)
-                    sendto_one(sptr, rpl_str(RPL_STATSULINE), me.name,
+                  sendto_one(&me, sptr, rpl_str(RPL_STATSULINE), me.name,
                     sptr->name, "U", "*", uservers[i], 0, 0);
             }
             break;
@@ -876,7 +876,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             time_t now;
 
             now = timeofday - me.since;
-            sendto_one(sptr, rpl_str(RPL_STATSUPTIME), me.name, parv[0],
+          sendto_one(&me, sptr, rpl_str(RPL_STATSUPTIME), me.name, parv[0],
                 now / 86400, (now / 3600) % 24, (now / 60) % 60, now % 60);
             break;
         }
@@ -892,7 +892,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if(IsAnOper(sptr))
                 report_fds(sptr);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name,  parv[0]);
             break;
 #endif
 
@@ -903,7 +903,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if(!classes)
                 break;
             for(tmp = classes; tmp; tmp = tmp->next)
-                sendto_one(sptr, rpl_str(RPL_STATSYLINE), me.name,
+              sendto_one(&me, sptr, rpl_str(RPL_STATSYLINE), me.name,
                            sptr->name, 'Y', tmp->name, tmp->pingfreq,
                            tmp->connfreq, tmp->ip24clones, tmp->maxlinks,
                            tmp->maxsendq);
@@ -914,14 +914,14 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             if (IsAnOper(sptr))
                 report_memory_usage(sptr, 1);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             break;
 
         case 'z':
             if (IsAnOper(sptr))
                 report_memory_usage(sptr, 0);
             else
-                sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+              sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             break;
 
         case '?':
@@ -932,7 +932,7 @@ int m_stats(aClient *cptr, aClient *sptr, int parc, char *parv[])
             stat = '*';
             break;
     }
-    sendto_one(sptr, rpl_str(RPL_ENDOFSTATS), me.name, parv[0], stat);
+  sendto_one(&me, sptr, rpl_str(RPL_ENDOFSTATS), me.name, parv[0], stat);
     return 0;
 }
 

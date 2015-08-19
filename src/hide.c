@@ -170,7 +170,7 @@ void fakeserver_list(aClient *sptr)
    {
       struct fakelinkserver *ls = (struct fakelinkserver *) lp->value.cp;
 
-      sendto_one(sptr, rpl_str(RPL_LINKS), me.name, sptr->name,
+    sendto_one(&me, sptr, rpl_str(RPL_LINKS), me.name, sptr->name,
                  ls->name, ls->name, 0, ls->description);
    }
 }
@@ -182,14 +182,14 @@ void fakeserver_sendserver(aClient *sptr)
 
 #if 0 /* Don't do this. */
    /* tell them to reset their list */
-   sendto_one(sptr, ":%s LINKSCONTROL RESET", me.name);
+ sendto_one(&me, sptr, ":%s LINKSCONTROL RESET", me.name);
 #endif
 
    for (lp = lserver_list; lp; lp = lp->next)
    {
       struct fakelinkserver *ls = (struct fakelinkserver *) lp->value.cp;
 
-      sendto_one(sptr, ":%s LINKSCONTROL + %s :%s",
+    sendto_one(&me, sptr, ":%s LINKSCONTROL + %s :%s",
                  me.name, ls->name, ls->description);
    }
 }
@@ -243,42 +243,42 @@ static void dolocklusers()
 
 void send_fake_users(aClient *sptr)
 {
-    sendto_one(sptr, rpl_str(RPL_LOCALUSERS), me.name, sptr->name,
+  sendto_one(&me, sptr, rpl_str(RPL_LOCALUSERS), me.name, sptr->name,
                    fakelusers.m_client, fakelusers.m_clientmax);
-    sendto_one(sptr, rpl_str(RPL_GLOBALUSERS), me.name, sptr->name,
+  sendto_one(&me, sptr, rpl_str(RPL_GLOBALUSERS), me.name, sptr->name,
                fakelusers.m_total, fakelusers.m_totalmax);
 }
 
 void send_fake_lusers(aClient *sptr) 
 {
 #ifdef SHOW_INVISIBLE_LUSERS
-   sendto_one(sptr, rpl_str(RPL_LUSERCLIENT), me.name, sptr->name,
+ sendto_one(&me, sptr, rpl_str(RPL_LUSERCLIENT), me.name, sptr->name,
               fakelusers.c_count, fakelusers.i_count, fakelusers.s_count);
 #else
-   sendto_one(sptr,
+ sendto_one(&me, sptr,
               ":%s %d %s :There are %d users on %d servers", me.name,
               RPL_LUSERCLIENT, sptr->name, fakelusers.c_count,
               fakelusers.s_count);
 #endif
 
    if (fakelusers.o_count)
-      sendto_one(sptr, rpl_str(RPL_LUSEROP),
+    sendto_one(&me, sptr, rpl_str(RPL_LUSEROP),
                  me.name, sptr->name, fakelusers.o_count);
 
    if(fakelusers.chan_count)
-      sendto_one(sptr, rpl_str(RPL_LUSERCHANNELS),
+    sendto_one(&me, sptr, rpl_str(RPL_LUSERCHANNELS),
                  me.name, sptr->name, fakelusers.chan_count);
 
-    sendto_one(sptr, rpl_str(RPL_LUSERME), me.name, sptr->name,
+  sendto_one(&me, sptr, rpl_str(RPL_LUSERME), me.name, sptr->name,
 #ifdef HIDEULINEDSERVS
                fakelusers.m_server - fakelusers.m_ulined);
 #else
                fakelusers.m_server);
 #endif
 
-    sendto_one(sptr, rpl_str(RPL_LOCALUSERS), me.name, sptr->name,
+  sendto_one(&me, sptr, rpl_str(RPL_LOCALUSERS), me.name, sptr->name,
                    fakelusers.m_client, fakelusers.m_clientmax);
-    sendto_one(sptr, rpl_str(RPL_GLOBALUSERS), me.name, sptr->name,
+  sendto_one(&me, sptr, rpl_str(RPL_GLOBALUSERS), me.name, sptr->name,
                fakelusers.m_total, fakelusers.m_totalmax);
 }
 
@@ -337,9 +337,9 @@ int m_luserslock(aClient *cptr, aClient *sptr, int parc, char *parv[])
 void fakelusers_sendlock(aClient *sptr)
 {
    if(luserslock_expiretime == -1)
-      sendto_one(sptr, ":%s LUSERSLOCK CANCEL", me.name);
+    sendto_one(&me, sptr, ":%s LUSERSLOCK CANCEL", me.name);
    else
-      sendto_one(sptr, ":%s LUSERSLOCK UNTIL %ld", me.name,
+    sendto_one(&me, sptr, ":%s LUSERSLOCK UNTIL %ld", me.name,
 		 (long)luserslock_expiretime);
 }
 

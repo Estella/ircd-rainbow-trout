@@ -35,3 +35,4 @@ tools/convert_conf
 tools/mkpasswd
 run
 make-cert.sh
+src/ircd.services

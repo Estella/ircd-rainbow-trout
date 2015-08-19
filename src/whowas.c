@@ -120,7 +120,7 @@ int m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2) 
     {
-	sendto_one(sptr, err_str(ERR_NONICKNAMEGIVEN),
+	sendto_one(&me, sptr, err_str(ERR_NONICKNAMEGIVEN),
 		   me.name, parv[0]);
 	return 0;
     }
@@ -141,17 +141,17 @@ int m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	{
 	    if (!mycmp(nick, temp->name)) 
 	    {
-		sendto_one(sptr, rpl_str(RPL_WHOWASUSER),
+		sendto_one(&me, sptr, rpl_str(RPL_WHOWASUSER),
 			   me.name, parv[0], temp->name,
 			   temp->username,
 			   temp->hostname,
 			   temp->realname);
 		if((temp->umode & UMODE_I) && !IsAnOper(sptr))
-		    sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
+		  sendto_one(&me, sptr, rpl_str(RPL_WHOISSERVER),
 			       me.name, parv[0], temp->name,
 			       HIDDEN_SERVER_NAME, myctime(temp->logoff));
 		else
-		    sendto_one(sptr, rpl_str(RPL_WHOISSERVER),
+		  sendto_one(&me, sptr, rpl_str(RPL_WHOISSERVER),
 			       me.name, parv[0], temp->name,
 			       temp->servername, myctime(temp->logoff));
 		cur++;
@@ -161,12 +161,12 @@ int m_whowas(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		break;
 	}
 	if (!found)
-	    sendto_one(sptr, err_str(ERR_WASNOSUCHNICK),
+	  sendto_one(&me, sptr, err_str(ERR_WASNOSUCHNICK),
 		       me.name, parv[0], nick);
 	if (p)
 	    p[-1] = ',';
     }
-    sendto_one(sptr, rpl_str(RPL_ENDOFWHOWAS), me.name, parv[0], parv[1]);
+  sendto_one(&me, sptr, rpl_str(RPL_ENDOFWHOWAS), me.name, parv[0], parv[1]);
     return 0;
 }
 

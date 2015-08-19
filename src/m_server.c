@@ -53,7 +53,7 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
         }
 	if (IsNickIPStr(cptr))
 	{
-	    sendto_one(cptr, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
+	  sendto_one(&me, cptr, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
 			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
 			   acptr->user->username, acptr->user->host,
 			   acptr->user->server, acptr->user->servicestamp,
@@ -61,7 +61,7 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
 	}
 	else
 	{
-	    sendto_one(cptr, "NICK %s %d %ld %s %s %s %s %lu %u :%s",
+	  sendto_one(&me, cptr, "NICK %s %d %ld %s %s %s %s %lu %u :%s",
 			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
 			   acptr->user->username, acptr->user->host,
 			   acptr->user->server, acptr->user->servicestamp,
@@ -78,7 +78,7 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
                    ubuf[i++] = *(s + 1);
                 }
             ubuf[i++] = '\0';
-            sendto_one(cptr, "SVSTAG %s %ld %d %s :%s", acptr->name, acptr->tsinfo, servicestag->raw,
+          sendto_one(&me, cptr, "SVSTAG %s %ld %d %s :%s", acptr->name, acptr->tsinfo, servicestag->raw,
                        ubuf, servicestag->tag);
         }
     }
@@ -102,7 +102,7 @@ do_server_estab(aClient *cptr)
 
     if(IsZipCapable(cptr) && DoZipThis(cptr))
     {
-        sendto_one(cptr, "SVINFO ZIP");
+      sendto_one(&me, cptr, "SVINFO ZIP");
         SetZipOut(cptr);
         cptr->serv->zip_out = zip_create_output_session();
     }
@@ -132,7 +132,7 @@ do_server_estab(aClient *cptr)
 
         bcptr = (cptr->firsttime > acptr->from->firsttime) ? cptr :
             acptr->from;
-        sendto_one(bcptr, "ERROR :Server %s already exists", cptr->name);
+      sendto_one(&me, bcptr, "ERROR :Server %s already exists", cptr->name);
         if (bcptr == cptr)
         {
             sendto_gnotice("from %s: Link %s cancelled, server %s already "
@@ -210,7 +210,7 @@ do_server_estab(aClient *cptr)
         if ((aconn = acptr->serv->aconn) &&
             !match(my_name_for_link(me.name, aconn), cptr->name))
             continue;
-        sendto_one(acptr, ":%s SERVER %s 2 :%s", me.name, cptr->name,
+      sendto_one(&me, acptr, ":%s SERVER %s 2 :%s", me.name, cptr->name,
                    cptr->info);
     }
 
@@ -242,7 +242,7 @@ do_server_estab(aClient *cptr)
         {
             if (match(my_name_for_link(me.name, aconn), acptr->name) == 0)
                 continue;
-            sendto_one(cptr, ":%s SERVER %s %d :%s",
+          sendto_one(&me, cptr, ":%s SERVER %s %d :%s",
                        acptr->serv->up, acptr->name,
                        acptr->hopcount + 1, acptr->info);
         }
@@ -261,7 +261,7 @@ do_server_estab(aClient *cptr)
 
     /* Bursts are about to start.. send a BURST */
     if (IsBurst(cptr))
-        sendto_one(cptr, "BURST");
+      sendto_one(&me, cptr, "BURST");
 
     /*
      * * Send it in the shortened format with the TS, if it's a TS
@@ -303,6 +303,10 @@ do_server_estab(aClient *cptr)
                 if (acptr->from != cptr)
                     sendnick_TS(cptr, acptr);
             }
+        struct PUser *pu;
+        for (pu = pusers; pu!=NULL; pu=pu->hh.next)
+            sendto_serv_butone(NULL, "NICK %s 1 0 +io %s %s %s 0 0 :IRCd pseudo user", pu->unick, pu->user, pu->host, me.name);
+
     }
 
     if(confopts & FLAGS_HUB)
@@ -331,7 +335,7 @@ do_server_estab(aClient *cptr)
        the other side has finished processing it. */
     cptr->flags |= FLAGS_BURST|FLAGS_PINGSENT;
     if (IsBurst(cptr)) cptr->flags |= FLAGS_SOBSENT;
-    sendto_one(cptr, "PING :%s", me.name);
+  sendto_one(&me, cptr, "PING :%s", me.name);
 
     return 0;
 }
@@ -350,7 +354,7 @@ m_server_estab(aClient *cptr)
     if (!(aconn = cptr->serv->aconn))
     {
         ircstp->is_ref++;
-        sendto_one(cptr, "ERROR :Lost Connect block");
+      sendto_one(&me, cptr, "ERROR :Lost Connect block");
         sendto_ops_lev(ADMIN_LEV, "Lost Connect block for server %s",
                            get_client_name(cptr, TRUE));
         return exit_client(cptr, cptr, cptr, "Lost Connect block");
@@ -360,7 +364,7 @@ m_server_estab(aClient *cptr)
     if (*aconn->apasswd && !StrEq(aconn->apasswd, encr))
     {
         ircstp->is_ref++;
-        sendto_one(cptr, "ERROR :Wrong link password");
+      sendto_one(&me, cptr, "ERROR :Wrong link password");
         sendto_ops("Link %s dropped, wrong password", inpath);
         return exit_client(cptr, cptr, cptr, "Bad Password");
     }
@@ -386,7 +390,7 @@ m_server_estab(aClient *cptr)
             if (local[i] && IsServer(local[i]))
             {
                 ircstp->is_ref++;
-                sendto_one(cptr, "ERROR :I'm a leaf not a hub");
+              sendto_one(&me, cptr, "ERROR :I'm a leaf not a hub");
                 return exit_client(cptr, cptr, cptr, "I'm a leaf");
             }
     }
@@ -400,22 +404,22 @@ m_server_estab(aClient *cptr)
     if (IsUnknown(cptr))
     {
         if (aconn->cpasswd[0])
-            sendto_one(cptr, "PASS %s :TS", aconn->cpasswd);
+          sendto_one(&me, cptr, "PASS %s :TS", aconn->cpasswd);
 
         /* Pass my info to the new server */
 
 #ifdef HAVE_ENCRYPTION_ON
         if(!WantDKEY(cptr))
-            sendto_one(cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP "
+          sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP "
                        "NICKIP NICKIPSTR TSMODE");
         else
-            sendto_one(cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT DKEY "
+          sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT DKEY "
                        "ZIP NICKIP NICKIPSTR TSMODE");
 #else
-        sendto_one(cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE");
+      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE");
 #endif
 
-        sendto_one(cptr, "SERVER %s 1 :%s",
+      sendto_one(&me, cptr, "SERVER %s 1 :%s",
                    my_name_for_link(me.name, aconn),
                    (me.info[0]) ? (me.info) : "IRCers United");
     }
@@ -433,7 +437,7 @@ m_server_estab(aClient *cptr)
             sendto_ops("Username mismatch [%s]v[%s] : %s",
                        aconn->host, cptr->username,
                        get_client_name(cptr, HIDEME));
-            sendto_one(cptr, "ERROR :No Username Match");
+          sendto_one(&me, cptr, "ERROR :No Username Match");
             return exit_client(cptr, cptr, cptr, "Bad User");
         }
         *s = '@';
@@ -449,7 +453,7 @@ m_server_estab(aClient *cptr)
                            me.name, get_client_name(cptr, HIDEME));
     }
 
-    sendto_one(cptr, "SVINFO %d %d 0 :%ld", TS_CURRENT, TS_MIN,
+  sendto_one(&me, cptr, "SVINFO %d %d 0 :%ld", TS_CURRENT, TS_MIN,
                (ts_val) timeofday);
 
     /* sendto one(cptr, "CAPAB ...."); moved to after PASS but before SERVER
@@ -482,7 +486,7 @@ m_server_estab(aClient *cptr)
     else
     {
         SetNegoServer(cptr); /* VERY IMPORTANT THAT THIS IS HERE */
-        sendto_one(cptr, "DKEY START");
+      sendto_one(&me, cptr, "DKEY START");
     }
 #else
     return do_server_estab(cptr);
@@ -511,7 +515,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || *parv[1] == '\0')
     {
-        sendto_one(cptr, "ERROR :No servername");
+      sendto_one(&me, cptr, "ERROR :No servername");
         return 0;
     }
 
@@ -549,7 +553,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
         /* A local link that has been identified as a USER tries
          * something fishy... ;-)
          */
-        sendto_one(cptr, err_str(ERR_UNKNOWNCOMMAND),
+      sendto_one(&me, cptr, err_str(ERR_UNKNOWNCOMMAND),
                    me.name, parv[0], "SERVER");
 
         return 0;
@@ -604,7 +608,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if ((!found_dot) || bogus_server)
         {
-            sendto_one(sptr, "ERROR :Bogus server name (%s)",
+          sendto_one(&me, sptr, "ERROR :Bogus server name (%s)",
                        clean_host);
             return exit_client(cptr, cptr, cptr, "Bogus server name");
         }
@@ -650,7 +654,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         bcptr = (cptr->firsttime > acptr->from->firsttime) ? cptr :
             acptr->from;
-        sendto_one(bcptr, "ERROR :Server %s already exists", host);
+      sendto_one(&me, bcptr, "ERROR :Server %s already exists", host);
         if (bcptr == cptr)
         {
             /* Don't complain for servers that are juped */
@@ -694,7 +698,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
          * cause a fair bit of confusion. Enough to make it hellish for
          * a while and servers to send stuff to the wrong place.
          */
-        sendto_one(cptr, "ERROR :Nickname %s already exists!", host);
+      sendto_one(&me, cptr, "ERROR :Nickname %s already exists!", host);
         strcpy(nbuf, get_client_name(cptr, HIDEME));
         sendto_gnotice("from %s: Link %s cancelled, servername/nick collision",
                        me.name, nbuf);
@@ -712,7 +716,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
          */
         if (parc == 1 || info[0] == '\0')
         {
-            sendto_one(cptr, "ERROR :No server info specified for %s", host);
+          sendto_one(&me, cptr, "ERROR :No server info specified for %s", host);
             return 0;
         }
         /*
@@ -729,7 +733,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
             sendto_serv_butone(cptr,":%s GNOTICE :Non-Hub link %s introduced "
                                "%s", me.name, get_client_name(cptr, HIDEME),
                                host);
-            sendto_one(cptr, "ERROR :You're not a hub (introducing %s)",
+          sendto_one(&me, cptr, "ERROR :You're not a hub (introducing %s)",
                        host);
             return exit_client(cptr, cptr, cptr, "Too many servers");
         }
@@ -781,7 +785,7 @@ int m_server(aClient *cptr, aClient *sptr, int parc, char *parv[])
             }
             if (match(my_name_for_link(me.name, aconn), acptr->name) == 0)
                 continue;
-            sendto_one(bcptr, ":%s SERVER %s %d :%s",
+          sendto_one(&me, bcptr, ":%s SERVER %s %d :%s",
                        parv[0], acptr->name, hop + 1, acptr->info);
         }
         return 0;
@@ -829,10 +833,10 @@ int m_dkey(aClient *cptr, aClient *sptr, int parc, char *parv[])
                        sptr->name);
 
         dh_get_s_public(keybuf, 1024, sptr->serv->sessioninfo_in);
-        sendto_one(sptr, "DKEY PUB I %s", keybuf);
+      sendto_one(&me, sptr, "DKEY PUB I %s", keybuf);
 
         dh_get_s_public(keybuf, 1024, sptr->serv->sessioninfo_out);
-        sendto_one(sptr, "DKEY PUB O %s", keybuf);
+      sendto_one(&me, sptr, "DKEY PUB O %s", keybuf);
         return 0;
     }
 
@@ -862,7 +866,7 @@ int m_dkey(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if(DKEY_DONE(sptr->serv->dkey_flags))
         {
-            sendto_one(sptr, "DKEY DONE");
+          sendto_one(&me, sptr, "DKEY DONE");
             SetRC4OUT(sptr);
 
             keylen = 1024;
@@ -897,7 +901,7 @@ int m_dkey(aClient *cptr, aClient *sptr, int parc, char *parv[])
         SetRC4IN(sptr);
         sendto_realops("Diffie-Hellman exchange with %s complete, connection "
                        "encrypted.", sptr->name);
-        sendto_one(sptr, "DKEY EXIT");
+      sendto_one(&me, sptr, "DKEY EXIT");
         return RC4_NEXT_BUFFER;
     }
 

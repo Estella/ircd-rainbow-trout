@@ -543,12 +543,12 @@ void throttle_stats(aClient *cptr, char *name)
            hashent_freelist->elemsPerBlock;
     hsz = hcnt * hashent_freelist->elemSize;
 
-    sendto_one(cptr, ":%s %d %s :throttles: %d", me.name, RPL_STATSDEBUG, name,
+  sendto_one(&me, cptr, ":%s %d %s :throttles: %d", me.name, RPL_STATSDEBUG, name,
             numthrottles);
-    sendto_one(cptr, ":%s %d %s :alloc memory: %d throttles (%d bytes), "
+  sendto_one(&me, cptr, ":%s %d %s :alloc memory: %d throttles (%d bytes), "
             "%d hashents (%d bytes)", me.name, RPL_STATSDEBUG, name,
             tcnt, tsz, hcnt, hsz);            
-    sendto_one(cptr, ":%s %d %s :throttle hash table size: %d", me.name,
+  sendto_one(&me, cptr, ":%s %d %s :throttle hash table size: %d", me.name,
             RPL_STATSDEBUG, name, throttle_hash->size);
 
     /* now count bans/pending */
@@ -559,14 +559,14 @@ void throttle_stats(aClient *cptr, char *name)
         else
             pending++;
     }
-    sendto_one(cptr, ":%s %d %s :throttles pending=%d bans=%d", me.name,
+  sendto_one(&me, cptr, ":%s %d %s :throttles pending=%d bans=%d", me.name,
             RPL_STATSDEBUG, name, pending, bans);
     LIST_FOREACH(tp, &throttles, lp) 
     {
         int ztime = throttle_get_zline_time(tp->stage);
 
         if (tp->zline_start && tp->zline_start + ztime > NOW)
-            sendto_one(cptr, ":%s %d %s :throttled: %s [stage %d, %ld secs"
+          sendto_one(&me, cptr, ":%s %d %s :throttled: %s [stage %d, %ld secs"
                              " remain, %d futile retries]", me.name,
                             RPL_STATSDEBUG, name, tp->addr, tp->stage, 
                             (long)((tp->zline_start + ztime) - NOW), tp->re_zlines);

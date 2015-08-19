@@ -77,8 +77,9 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
         mb = mode;
         *mb++;
         for (cm = clink->value.chptr->members; cm; cm = cm->next) {
-          sendto_one(cm->cptr, ":%s!%s@%s PART %s :--- Signed on (SVSHOST: %s) ---", cptr->name, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
-          sendto_one(cm->cptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
+        if (cptr == cm->cptr) continue; // from #ronsor on Umbrellix: 22:51:39 <!Ronsor> dont send to user getting svshosted
+        sendto_one(&me, cm->cptr, ":%s!%s@%s PART %s :--- Signed on (SVSHOST: %s) ---", cptr->name, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
+        sendto_one(&me, cm->cptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
           if (mb[0] != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
         }
     }
@@ -124,14 +125,14 @@ int m_aliased(aClient *cptr, aClient *sptr, int parc, char *parv[], AliasInfo *a
 {
     if (parc < 2 || *parv[1] == 0)
     {
-        sendto_one(sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
         return -1;
     }
 
     /* second check is to avoid message loops when admins get stupid */
     if (!ai->client || ai->client->from == sptr->from)
     {
-        sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
                    ai->nick);
         return 0;
     }
@@ -139,7 +140,7 @@ int m_aliased(aClient *cptr, aClient *sptr, int parc, char *parv[], AliasInfo *a
     if((svspanic>1 && !IsOper(sptr)) || (svspanic>0 && !IsARegNick(sptr) && !IsOper(sptr)))
     {
         if(MyClient(sptr))
-            sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
+          sendto_one(&me, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
                        ai->nick);
         return 0;
     }
@@ -157,18 +158,18 @@ int m_services(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || *parv[1] == '\0')
     {
-	sendto_one(sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
+	sendto_one(&me, sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
 	return -1;
     }
     if ((strlen(parv[1]) >= 4) && (!myncmp(parv[1], "help", 4)))
     {
-	sendto_one(sptr, ":services!service@%s NOTICE %s :For ChanServ "
+	sendto_one(&me, sptr, ":services!service@%s NOTICE %s :For ChanServ "
 		   "help use: /chanserv help", Services_Name,
 		   sptr->name);
-	sendto_one(sptr, ":services!service@%s NOTICE %s :For NickServ "
+	sendto_one(&me, sptr, ":services!service@%s NOTICE %s :For NickServ "
 		   "help use: /nickserv help", Services_Name,
 		   sptr->name);
-	sendto_one(sptr, ":services!service@%s NOTICE %s :For MemoServ "
+	sendto_one(&me, sptr, ":services!service@%s NOTICE %s :For MemoServ "
 		   "help use: /memoserv help", Services_Name,
 		   sptr->name);
 	return 0;
@@ -192,7 +193,7 @@ int m_identify(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || *parv[1] == '\0')
     {
-	sendto_one(sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
+	sendto_one(&me, sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
 	return -1;
     }
 
@@ -201,7 +202,7 @@ int m_identify(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!aliastab[aidx].client)
     {
-        sendto_one(sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
+      sendto_one(&me, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
                    aliastab[aidx].nick);
         return 0;
     }

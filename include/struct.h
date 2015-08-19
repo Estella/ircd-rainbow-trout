@@ -889,6 +889,8 @@ struct Server
     int         uflags;           /* U:lined flags */
 };
 
+#define CCB (aClient *cptr, aClient *sptr, char *cmd, int parc, char *parv[])
+
 struct Client 
 {
     struct Client *next, *prev, *hnext;
@@ -911,6 +913,7 @@ struct Client
 				     * host */
     char        info[REALLEN + 1];  /* Free form additional client 
 				     * information */
+    int (*cb)CCB; // Callback function, must be NULL for normal clients and remote pseudos.
 #ifdef FLUD
     Link       *fludees;
 #endif
@@ -1132,6 +1135,7 @@ struct PuCommand
 struct PUser
 {
   char *nick; // is a nickname for the pseudouser
+  char *unick; // is actually sent on S2S
   char *user; // user@
   char *host; // host
   struct PuCommand *cmds; // points to a PuCommand
@@ -1141,6 +1145,7 @@ struct PUser
 extern struct PUser *pusers;
 extern int create_puser(char *, char *, char *);
 extern int delete_puser(char *);
+extern char *gethost_puser(char *);
 extern int puser_add_cb(char *, char *, int (*func)());
 extern int puser_del_cb(char *, char *);
 
@@ -1325,6 +1330,7 @@ struct Channel
 #define MTYP_FULL      0x01    /* mask is nick!user@host */
 #define MTYP_USERHOST  0x02    /* mask is user@host */
 #define MTYP_HOST      0x04    /* mask is host only */
+#define MTYP_EXT      0x08    /* mask is of modular type (extbans $c;mask */
 
 /* Channel Visibility macros */
 

@@ -667,7 +667,7 @@ int check_client(aClient *cptr)
 
         if (!hp->h_addr_list[i])
         {
-            sendto_one(cptr, "NOTICE AUTH :*** Your forward and reverse"
+          sendto_one(&me, cptr, "NOTICE AUTH :*** Your forward and reverse"
                              " DNS do not match, ignoring hostname.");
             hp = NULL;
         }
@@ -868,27 +868,27 @@ int completed_connection(aClient * cptr)
         return -1;
     }
     if (!BadPtr(aconn->cpasswd))
-        sendto_one(cptr, "PASS %s :TS", aconn->cpasswd);
+      sendto_one(&me, cptr, "PASS %s :TS", aconn->cpasswd);
 
     /* pass on our capabilities to the server we /connect'd */
 #ifdef HAVE_ENCRYPTION_ON
     if(!(aconn->flags & CONN_DKEY))
-        sendto_one(cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP"
+      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP"
                          " NICKIP NICKIPSTR TSMODE");
     else
     {
-        sendto_one(cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT DKEY"
+      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT DKEY"
                          " ZIP NICKIP NICKIPSTR TSMODE");
         SetWantDKEY(cptr);
     }
 #else
-    sendto_one(cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE");
+  sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE");
 #endif
 
     if(aconn->flags & CONN_ZIP)
         cptr->capabilities |= CAPAB_DOZIP;
 
-    sendto_one(cptr, "SERVER %s 1 :%s", my_name_for_link(me.name, aconn), 
+  sendto_one(&me, cptr, "SERVER %s 1 :%s", my_name_for_link(me.name, aconn), 
                                         me.info);
 #ifdef DO_IDENTD
     /* Is this the right place to do this?  dunno... -Taner */
@@ -1380,7 +1380,7 @@ aClient *add_connection(aListener *lptr, int fd)
     if(!(lptr->flags & CONF_FLAGS_P_NODNS))
     {
 #ifdef SHOW_HEADERS
-        sendto_one(acptr, "%s", REPORT_DO_DNS);
+      sendto_one(&me, acptr, "%s", REPORT_DO_DNS);
 #endif
         lin.flags = ASYNC_CLIENT;
         lin.value.cptr = acptr;
@@ -1402,7 +1402,7 @@ aClient *add_connection(aListener *lptr, int fd)
             SetDNS(acptr);
 #ifdef SHOW_HEADERS
         else
-            sendto_one(acptr, "%s", REPORT_FIN_DNSC);
+          sendto_one(&me, acptr, "%s", REPORT_FIN_DNSC);
 #endif
         nextdnscheck = 1;
     }
@@ -1849,7 +1849,7 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
         sendto_ops("Server %s already present from %s",
                     aconn->name, get_client_name(c2ptr, HIDEME));
         if (by && IsPerson(by) && !MyClient(by))
-            sendto_one(by, ":%s NOTICE %s :Server %s already present from %s",
+          sendto_one(&me, by, ":%s NOTICE %s :Server %s already present from %s",
                        me.name, by->name, aconn->name,
                        get_client_name(c2ptr, HIDEME));
         return -1;
@@ -1926,7 +1926,7 @@ int connect_server(aConnect *aconn, aClient * by, struct hostent *hp)
         errtmp = errno;     /* other system calls may eat errno */
         report_error("Connect to host %s failed: %s", cptr);
         if (by && IsPerson(by) && !MyClient(by))
-            sendto_one(by, ":%s NOTICE %s :Connect to server %s failed.",
+          sendto_one(&me, by, ":%s NOTICE %s :Connect to server %s failed.",
                        me.name, by->name, cptr->name);
         close(cptr->fd);
         cptr->fd = -2;
@@ -2236,7 +2236,7 @@ void do_dns_async()
                 {
                     del_queries((char *) cptr);
 #ifdef SHOW_HEADERS
-                    sendto_one(cptr, "%s", REPORT_FIN_DNS);
+                  sendto_one(&me, cptr, "%s", REPORT_FIN_DNS);
 #endif
                     ClearDNS(cptr);
                     cptr->hostp = hp;

@@ -22,7 +22,7 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
     if(MyClient(sptr) && !IsAnOper(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -50,7 +50,7 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
 
     if (IsPerson(sptr))
-        sendto_one(sptr, "%s NOTICE %s :I don't have module support.",
+      sendto_one(&me, sptr, "%s NOTICE %s :I don't have module support.",
                    me.name, sptr->name);
 
     return 0;
@@ -153,7 +153,7 @@ modsym_load(aClient *sptr, char *modname, char *symbol, void *modulehandle,
     if(error != NULL)
     {
         if(sptr)
-            sendto_one(sptr, ":%s NOTICE %s :Module symbol error for %s/%s: %s",
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module symbol error for %s/%s: %s",
                        me.name, sptr->name, modname, symbol, error);
         else
             fprintf(stderr, " - Module symbol error for %s/%s: %s\n",
@@ -175,10 +175,10 @@ list_modules(aClient *sptr)
     for(lp = module_list; lp; lp = lp->next)
     {
         aModule *mod = (aModule *) lp->value.cp;
-        sendto_one(sptr, ":%s NOTICE %s :Module: %s    Version: %s",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Module: %s    Version: %s",
                    me.name, sptr->name, mod->name, mod->version);
 
-        sendto_one(sptr, ":%s NOTICE %s :  - %s", me.name, sptr->name, 
+      sendto_one(&me, sptr, ":%s NOTICE %s :  - %s", me.name, sptr->name, 
                    mod->description);
     }
 }
@@ -205,7 +205,7 @@ load_module(aClient *sptr, char *modname)
     if((themod = find_module(modname)))
     {
         if(sptr)
-            sendto_one(sptr, ":%s NOTICE %s :Module %s is already loaded"
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module %s is already loaded"
                        " [version: %s]", me.name, sptr->name, modname, 
                        themod->version);
         else
@@ -223,7 +223,7 @@ load_module(aClient *sptr, char *modname)
     if(tmpmod.handle == NULL)
     {
         if(sptr)
-            sendto_one(sptr, ":%s NOTICE %s :Module load error for %s: %s",
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module load error for %s: %s",
                        me.name, sptr->name, modname, dlerror());
         else
             fprintf(stderr, " - Module load error for %s: %s\n",
@@ -254,7 +254,7 @@ load_module(aClient *sptr, char *modname)
     if(acsz != MODULE_INTERFACE_VERSION)
     {
         if(sptr)
-            sendto_one(sptr, ":%s NOTICE %s :Module load error for %s:"
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module load error for %s:"
                     " Incompatible module (My interface version: %d Module"
                     " version: %d)", me.name, sptr->name, modname, 
                     MODULE_INTERFACE_VERSION, acsz);
@@ -282,7 +282,7 @@ load_module(aClient *sptr, char *modname)
     if(ret == 0)
     {
         if(sptr)
-            sendto_one(sptr, ":%s NOTICE %s :Module %s successfully loaded"
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module %s successfully loaded"
                        " [version: %s]", me.name, sptr->name, modname, 
                        themod->version);
         else
@@ -297,7 +297,7 @@ load_module(aClient *sptr, char *modname)
         destroy_module(themod);
 
         if(sptr)
-            sendto_one(sptr, ":%s NOTICE %s :Module %s load failed (module"
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module %s load failed (module"
                         " requested unload)", me.name, sptr->name, modname);
         else
             fprintf(stderr, " - Module %s load failed (module requested"
@@ -313,7 +313,7 @@ unload_module(aClient *sptr, char *modname)
 
     if(!themod)
     {
-        sendto_one(sptr, ":%s NOTICE %s :Module %s is not loaded",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Module %s is not loaded",
                    me.name, sptr->name, modname);
         return 0;
     }
@@ -322,7 +322,7 @@ unload_module(aClient *sptr, char *modname)
     call_hooks(MHOOK_UNLOAD, themod->name, (void *) themod);
     destroy_module(themod);
 
-    sendto_one(sptr, ":%s NOTICE %s :Module %s successfully unloaded",
+  sendto_one(&me, sptr, ":%s NOTICE %s :Module %s successfully unloaded",
                me.name, sptr->name, modname);
 
     return 0;
@@ -333,13 +333,13 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
     if(!IsAnOper(sptr))
     {
-        sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
     if(parc < 2)
     {
-        sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
+      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
                         parv[0], "MODULE");
         return 0;
     }
@@ -352,14 +352,14 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if(!(MyClient(sptr) && IsAdmin(sptr)))
         {
-            sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             return 0;
         }
         if(!BadPtr(parv[2]))
             load_module(sptr, parv[2]);
         else
         {
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
                        parv[0], "MODULE");
             return 0;
         }
@@ -369,14 +369,14 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
     {
         if(!(MyClient(sptr) && IsAdmin(sptr)))
         {
-            sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             return 0;
         }
         if(!BadPtr(parv[2]))
             unload_module(sptr, parv[2]);
         else
         {
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
                        parv[0], "MODULE");
             return 0;
         }
@@ -388,7 +388,7 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
 
         list_modules(sptr);
-        sendto_one(sptr, ":%s NOTICE %s :--- End of module list ---",
+      sendto_one(&me, sptr, ":%s NOTICE %s :--- End of module list ---",
                    me.name, sptr->name);
     }
     else if(mycmp(parv[1], "HOOKS") == 0)
@@ -398,7 +398,7 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
             return 0;
 
         list_hooks(sptr);
-        sendto_one(sptr, ":%s NOTICE %s :--- End of hook list ---",
+      sendto_one(&me, sptr, ":%s NOTICE %s :--- End of hook list ---",
                    me.name, sptr->name);
     }
     else if(mycmp(parv[1], "CMD") == 0)
@@ -406,19 +406,19 @@ m_module(aClient *cptr, aClient *sptr, int parc, char *parv[])
         aModule *themod;
         if(!(MyClient(sptr) && IsAdmin(sptr)))
         {
-            sendto_one(sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             return 0;
         }
         if(BadPtr(parv[2]))
         {
-            sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
+          sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name,
                        parv[0], "MODULE");
             return 0;
         }
         themod = find_module(parv[2]);
         if(!themod)
         {
-            sendto_one(sptr, ":%s NOTICE %s :Module %s not found for cmd",
+          sendto_one(&me, sptr, ":%s NOTICE %s :Module %s not found for cmd",
                        me.name, sptr->name, parv[2]);
             return 0;
         }
@@ -481,6 +481,8 @@ static DLink *preaccess_hooks = NULL;
 static DLink *postaccess_hooks = NULL;
 static DLink *postmotd_hooks = NULL;
 static DLink *msg_hooks = NULL;
+static DLink *jchanmsg_hooks = NULL;
+static DLink *schanmsg_hooks = NULL;
 static DLink *chanmsg_hooks = NULL;
 static DLink *usermsg_hooks = NULL;
 static DLink *mymsg_hooks = NULL;
@@ -504,6 +506,12 @@ get_texthooktype(enum c_hooktype hooktype)
     {
         case CHOOK_10SEC:
             return "10 seconds";
+
+        case CHOOK_CHECKCANSPEAK:
+            return "Can speak (cptr, chptr, msg)";
+
+        case CHOOK_CHECKCANJOIN:
+            return "Can join (cptr, chptr)";
 
         case CHOOK_PREACCESS:
             return "Pre-access";
@@ -582,6 +590,14 @@ get_hooklist(enum c_hooktype hooktype)
 
         case CHOOK_CHANMSG:
             hooklist = &chanmsg_hooks;
+            break;
+
+        case CHOOK_CHECKCANSPEAK:
+            hooklist = &jchanmsg_hooks;
+            break;
+
+        case CHOOK_CHECKCANJOIN:
+            hooklist = &schanmsg_hooks;
             break;
 
         case CHOOK_USERMSG:
@@ -795,6 +811,40 @@ call_hooks(enum c_hooktype hooktype, ...)
                 break;
             }
 
+
+        case CHOOK_CHECKCANSPEAK:
+            {
+                aClient *acptr = va_arg(vl, aClient *);
+                aChannel *chptr = va_arg(vl, aChannel *);
+                char *txtptr = va_arg(vl, char *);
+
+                for(lp = schanmsg_hooks; lp; lp = lp->next)
+                {
+                    int (*rfunc) (aClient *, aChannel *, char *) =
+                                  ((aHook *)lp->value.cp)->funcptr;
+                    if((ret = (*rfunc)(acptr, chptr, txtptr)) 
+                                    == FLUSH_BUFFER)
+                        break;
+                }
+                break;
+            }
+
+        case CHOOK_CHECKCANJOIN:
+            {
+                aClient *acptr = va_arg(vl, aClient *);
+                aChannel *chptr = va_arg(vl, aChannel *);
+
+                for(lp = jchanmsg_hooks; lp; lp = lp->next)
+                {
+                    int (*rfunc) (aClient *, aChannel *) =
+                                  ((aHook *)lp->value.cp)->funcptr;
+                    if((ret = (*rfunc)(acptr, chptr)) 
+                                    == FLUSH_BUFFER)
+                        break;
+                }
+                break;
+            }
+
         case CHOOK_USERMSG:
             {
                 aClient *acptr = va_arg(vl, aClient *);
@@ -946,7 +996,7 @@ list_hooks(aClient *sptr)
         aHook *hook = (aHook *) lp->value.cp;
         aModule *mod = hook->owner;
 
-        sendto_one(sptr, ":%s NOTICE %s :Module: %s  Type: %s",
+      sendto_one(&me, sptr, ":%s NOTICE %s :Module: %s  Type: %s",
                    me.name, sptr->name, mod->name, 
                    get_texthooktype(hook->hooktype));
     }
@@ -1004,6 +1054,8 @@ memcount_modules(MCmodules *mc)
     mc->e_dlinks += mc_dlinks(postmotd_hooks);
     mc->e_dlinks += mc_dlinks(msg_hooks);
     mc->e_dlinks += mc_dlinks(chanmsg_hooks);
+    mc->e_dlinks += mc_dlinks(jchanmsg_hooks);
+    mc->e_dlinks += mc_dlinks(schanmsg_hooks);
     mc->e_dlinks += mc_dlinks(usermsg_hooks);
     mc->e_dlinks += mc_dlinks(mymsg_hooks);
     mc->e_dlinks += mc_dlinks(every10_hooks);
