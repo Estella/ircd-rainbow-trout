@@ -60,6 +60,7 @@ extern int server_was_split;
 extern int svspanic;
 extern int svsnoop;
 
+
 static char buf[BUFSIZE], buf2[BUFSIZE];
 int  user_modes[] =
 {

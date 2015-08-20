@@ -757,14 +757,14 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 						 : ((cm->flags&CHFL_VOICE) ? 
 						    '+' : 0))));
 		status[++i]=0;
-		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
+		sendto_one(&me, sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   wsopts.channel->chname, ac->user->username,
 			   WHO_HOST(ac), WHO_SERVER(sptr, ac), ac->name, status,
 			   WHO_HOPCOUNT(sptr, ac),
 			   ac->info);
 	    }
 	}
-	sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
+	sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
 		   wsopts.channel->chname, "WHO");
 	return 0;
     }
@@ -777,7 +777,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	{
 	    if(!chk_who(ac,1))
 	    {
-		sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
+		sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
 			   wsopts.host!=NULL ? wsopts.host : wsopts.nick, "WHO");
 		return 0;
 	    }
@@ -787,18 +787,18 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		status[1]=(IsAnOper(ac) ? '*' : (IsInvisible(ac) &&
 						 IsAnOper(sptr) ? '#' : 0));
 		status[2]=0;
-		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
+		sendto_one(&me, sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   wsopts.show_chan ? first_visible_channel(ac, sptr)
 			   : "*", ac->user->username, WHO_HOST(ac),
 			   WHO_SERVER(sptr, ac), ac->name, status,
 			   WHO_HOPCOUNT(sptr, ac),
 			   ac->info);
-		sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
+		sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
 			   wsopts.host!=NULL ? wsopts.host : wsopts.nick, "WHO");
 		return 0;
 	    }
 	}
-	sendto_one(sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
+	sendto_one(&me, sptr, getreply(RPL_ENDOFWHO), me.name, sptr->name,
 		   wsopts.host!=NULL ? wsopts.host : wsopts.nick, "WHO");
 	return 0;
     }
@@ -830,7 +830,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 						 : ((cm->flags&CHFL_VOICE)
 							? '+' : 0))));
 		status[++i]=0;
-		sendto_one(sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
+		sendto_one(&me, sptr, getreply(RPL_WHOREPLY), me.name, sptr->name,
 			   lp->value.chptr->chname, ac->user->username,
 			   WHO_HOST(ac),WHO_SERVER(sptr, ac), ac->name,
 			   status, WHO_HOPCOUNT(sptr, ac), ac->info);
@@ -848,7 +848,7 @@ int m_who(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	     * IF they haven't reached the max, or they're an oper */
 	    if(shown==MAXWHOREPLIES && !IsAnOper(sptr))
 	    {
-		sendto_one(sptr, getreply(ERR_WHOLIMEXCEED), me.name, 
+		sendto_one(&me, sptr, getreply(ERR_WHOLIMEXCEED), me.name, 
 			   sptr->name, MAXWHOREPLIES, "WHO");
 		break; /* break out of loop so we can send end of who */
 	    }

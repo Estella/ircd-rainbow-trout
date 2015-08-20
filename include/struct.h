@@ -1239,6 +1239,21 @@ struct ChanLink
 
 /* general link structure used for chains */
 
+struct HookList {
+  int hookid;
+  int (*hook);
+  UT_hash_handle hh;
+};
+
+struct HookHash
+{
+  char *hook;
+  struct HookList *hl;
+  UT_hash_handle hh;
+};
+
+extern struct HookHash hookh;
+
 struct SLink 
 {
     struct SLink *next;

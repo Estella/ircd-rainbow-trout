@@ -71,10 +71,10 @@ void build_rplcache(void)
     /* put MAXBANS and MAXCHANNELS first so better tokens override them */
     ircsprintf(scratchbuf,"NETWORK=%s SAFELIST MAXBANS=%i MAXCHANNELS=%i "
                "CHANNELLEN=%i KICKLEN=%i NICKLEN=%i TOPICLEN=%i MODES=%i "
-               "CHANTYPES=# CHANLIMIT=#:%i STATUSMSG=@+ PREFIX=(aohv)!@%%+ ",
+               "CHANTYPES=# CHANLIMIT=#:%i STATUSMSG=@+ PREFIX=(aohv)%s ",
                Network_Name, MAXBANS, maxchannelsperuser, CHANNELLEN,
                TOPICLEN, NICKLEN, TOPICLEN, MAXMODEPARAMSUSER,
-               maxchannelsperuser);
+               maxchannelsperuser, "!@%+");
 
     ircsprintf(rplisupport1, rpl_str(RPL_ISUPPORT), me.name, "%s", scratchbuf);
 

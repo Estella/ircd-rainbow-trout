@@ -5692,7 +5692,7 @@ int m_samode(aClient *cptr, aClient *sptr, int parc, char *parv[])
 char  *pretty_mask(char *mask)
 {
     char  *cp, *user, *host;
-    
+    if (mask[0] == '$') return mask; // Hack for exten bans
     if ((user = strchr((cp = mask), '!')))
         *user++ = '\0';
     if ((host = strrchr(user ? user : cp, '@')))
