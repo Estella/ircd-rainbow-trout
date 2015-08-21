@@ -1009,11 +1009,11 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         if(call_hooks(CHOOK_PREACCESS, sptr) == FLUSH_BUFFER)
             return FLUSH_BUFFER;
 
-        if (CloakKey[0]) {
-            sptr->umode |= UMODE_CLOAK;
-            strcpy(sptr->user->host, sptr->user->mangledhost);
-            hostchange_qjm(sptr, sptr->user->realhost, sptr->name, "Set +x on self");
-        }
+//        if (CloakKey[0]) {
+//            sptr->umode |= UMODE_CLOAK;
+//            strcpy(sptr->user->host, sptr->user->mangledhost);
+//            hostchange_qjm(sptr, sptr->user->realhost, sptr->name, "Set +x on self");
+//        }
 
 #if (RIDICULOUS_PARANOIA_LEVEL>=1)
         if(!BadPtr(sptr->passwd) && (pwaconf->flags & CONF_FLAGS_I_OPERPORT))

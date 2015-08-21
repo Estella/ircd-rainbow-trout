@@ -8,6 +8,7 @@
  */
 
 #define BIRCMODULE // to stop hook addition complaints
+#include <openssl/hmac.h>
 #include "struct.h"
 #include "common.h"
 #include "hooks.h"
@@ -33,26 +34,13 @@ static char chartab[37] = {
 static char *
 do_ip_cloak_part(const char *part)
 {
-    char *hash, *hazh = malloc(strlen(part)+1+3), *hatch = malloc(strlen(part)+1+3);
-    memset(hatch, 0, strlen(part)+1+3);
-    memset(hazh, 0, strlen(part)+1+3);
-    if (CloakKey[0])
-    { char *key = malloc(strlen(part)+1+sizeof(CloakKey));
-      strncpy(key, part, strlen(part)+1+sizeof(CloakKey));
-      strncat(key, CloakKey, strlen(part)+1+sizeof(CloakKey));
-    } else {
-      char *key = malloc(strlen(part)+1);
-      strncpy(key, part, strlen(part)+1);
-    }
+    unsigned char *hash;
+    char buf[32] = "";
     int i;
-    void *rc4state = rc4_initstate((unsigned char *)strdup(part), strlen(part));
-    hash = malloc(strlen(part)+1+3);
-    rc4_process_stream_to_buf(rc4state, part, hash, strlen(part));
-    for (i = 0; i < strlen(part); i++) {
-      hazh[i] = chartab[hash[i]%35];
-    }
-    rc4_destroystate(rc4state);
-    return hazh;
+    if (!CloakKey[0]) return strdup(part);
+    hash = HMAC(EVP_sha256(), CloakKey, strlen(CloakKey), (unsigned char*)part, strlen(part), NULL, NULL);
+    ircsnprintf(buf, sizeof(buf), "%.2X%.2X%.2X%.2X", hash[2], hash[4], hash[6], hash[8]);
+    return strdup(buf);
 }
 
 static void
@@ -69,9 +57,9 @@ do_ip_cloak(const char *inbuf, char *outbuf)
     b = (in_addr.s_addr & 0x00ff0000) >> 16;
     c = (in_addr.s_addr & 0x0000ff00) >> 8;
     d = in_addr.s_addr & 0x000000ff;
-    snprintf(alpha, 511, "%s", inbuf);
-    snprintf(beta, 511, "%u.%u.%u", a, b, c);
-    snprintf(gamma, 511, "%u.%u", a, b);
+    ircsnprintf(alpha, 511, "%s", inbuf);
+    ircsnprintf(beta, 511, "%u.%u.%u", a, b, c);
+    ircsnprintf(gamma, 511, "%u.%u", a, b);
     ircsprintf(outbuf, "%s.%s.%s.i4msk", do_ip_cloak_part(alpha), do_ip_cloak_part(beta), do_ip_cloak_part(gamma));
 }
 
@@ -144,7 +132,7 @@ do_host_cloak_host(const char *inbuf, char *outbuf)
     int hostlen = 0;
 
     for (i = 0; i < strlen(oldhost); i++) {
-        oldhost++;
+        *oldhost++;
         hostlen++;
         if (*oldhost == '.') {
             break;
@@ -193,9 +181,9 @@ do_host_cloak_ip(const char *inbuf, char *outbuf)
 
 int do_make_cloak (aClient *sptr) {
   char *in = sptr->user->host;
-  if (*in && !sptr->user->host[0]) strcpy(sptr->user->realhost, in);
+  if (*in && !sptr->user->realhost[0]) strcpy(sptr->user->realhost, in);
   char *out = sptr->user->mangledhost;
-  if (!myncmp(in, sptr->hostip, strlen(in)))
+  if (!myncmp(in, sptr->hostip, strlen(sptr->hostip)))
     do_host_cloak_ip(in, out);
   else
     do_host_cloak_host(in, out);
