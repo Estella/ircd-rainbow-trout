@@ -1609,8 +1609,6 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
 {
     aClient *acptr;
     aChannel *chptr;
-    struct PUser *pu;
-    struct PuCommand *pc;
     char *cmd;
     int ismine, ret, i;
     char *s;
