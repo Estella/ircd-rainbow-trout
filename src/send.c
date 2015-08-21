@@ -62,8 +62,8 @@ static int  send_message(aClient *, aClient *, char *, int, void*);
 static char rc4buf[16384];
 #endif
 
-static int  sentalong[MAXCONNECTIONS];
-static int  sent_serial;
+int  sentalong[MAXCONNECTIONS];
+int  sent_serial;
 
 void init_send()
 {
@@ -756,7 +756,7 @@ static inline int prefix_buffer(int remote, aClient *from, char *prefix,
         if (!flag && MyConnect(from) && *user->host) 
         {
             buffer[sidx++] = '@';
-            for(p = from->sockhost; *p; p++)
+            for(p = user->host; *p; p++)
                 buffer[sidx++] = *p;
         }
     }
@@ -773,7 +773,7 @@ static inline int prefix_buffer(int remote, aClient *from, char *prefix,
     return msglen;
 }
 
-static inline int check_fake_direction(aClient *from, aClient *to)
+inline int check_fake_direction(aClient *from, aClient *to)
 {
     if (!MyClient(from) && IsPerson(to) && (to->from == from->from)) 
     {
@@ -1999,7 +1999,7 @@ void sendto_prefix_one(aClient *to, aClient *from, char *pattern, ...)
             if (!flag && MyConnect(from) && *user->host) 
             {
                 sender[sidx++] = '@';
-                for(idx = from->sockhost; *idx; idx++)
+                for(idx = user->host; *idx; idx++)
                     sender[sidx++] = *idx;
             }
 
@@ -2108,7 +2108,7 @@ void vsendto_prefix_one(aClient *to, aClient *from, char *pattern, va_list vl)
             if (!flag && MyConnect(from) && *user->host) 
             {
                 sender[sidx++] = '@';
-                for(idx = from->sockhost; *idx; idx++)
+                for(idx = user->host; *idx; idx++)
                     sender[sidx++] = *idx;
             }
 

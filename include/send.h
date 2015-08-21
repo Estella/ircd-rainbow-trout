@@ -95,6 +95,7 @@ extern void vsendto_one(aClient *from, aClient *to, char *pattern, va_list vl);
 extern void vsendto_prefix_one(aClient *from, aClient *to,
 			       char *pattern, va_list vl);
 extern void vsendto_realops(char *pattern, va_list vl);
+extern int check_fake_direction (aClient *, aClient *);
 
 extern void flush_connections();
 extern void dump_connections();

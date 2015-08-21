@@ -59,6 +59,7 @@ char Network_Name[HOSTLEN+1];
 char Services_Name[HOSTLEN+1];
 char Stats_Name[HOSTLEN+1];
 char NS_Register_URL[TOPICLEN+1];
+char CloakKey[TOPICLEN+1];
 char Network_Kline_Address[HOSTLEN+1];
 char Local_Kline_Address[HOSTLEN+1];
 char Staff_Address[HOSTLEN+1];

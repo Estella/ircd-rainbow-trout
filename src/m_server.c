@@ -51,7 +51,14 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
             ubuf[0] = '+';
             ubuf[1] = '\0';
         }
-	if (IsNickIPStr(cptr))
+	if (IsENick(cptr) && *acptr->user->realhost)
+        {
+	  sendto_one(&me, cptr, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s :%s",
+			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
+			   acptr->user->username, acptr->user->host,
+			   acptr->user->server, acptr->user->servicestamp,
+			   cipntoa(acptr), acptr->user->realhost, acptr->user->mangledhost[0] ? acptr->user->mangledhost : "*", acptr->info);
+        } else if (IsNickIPStr(cptr))
 	{
 	  sendto_one(&me, cptr, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
 			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
@@ -185,9 +192,9 @@ do_server_estab(aClient *cptr)
      * me->serv and the other between serv->me
      */
 
-    sendto_serv_butone(NULL, ":%s GNOTICE :Link with %s established: %s",
+    sendto_serv_butone(NULL, ":%s GNOTICE :Link with %s established: %s %s",
                        me.name, inpath,
-                       DoesTS(cptr) ? "TS link" : "Non-TS link!",
+                       DoesTS(cptr) ? "TS link -- essential to prevent desynchronisation city. " : "Non-TS link! ",
                        IsSSL(cptr) ? "SSL secured link :D" : "Non-SSL link! :( If this link is over the public Internet, please use SSL if at all posssible, or RC4 if the server is legacy."
     );
 
@@ -411,12 +418,12 @@ m_server_estab(aClient *cptr)
 #ifdef HAVE_ENCRYPTION_ON
         if(!WantDKEY(cptr))
           sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP "
-                       "NICKIP NICKIPSTR TSMODE");
+                       "NICKIP NICKIPSTR ENICK TSMODE");
         else
           sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT DKEY "
-                       "ZIP NICKIP NICKIPSTR TSMODE");
+                       "ZIP NICKIP NICKIPSTR ENICK TSMODE");
 #else
-      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE");
+      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE ENICK");
 #endif
 
       sendto_one(&me, cptr, "SERVER %s 1 :%s",

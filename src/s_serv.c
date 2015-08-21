@@ -634,9 +634,6 @@ m_help(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsAnOper(sptr) || (helpfile == (aMotd *) NULL))
     {
-        for (i = 0; msgtab[i].cmd; i++)
-          sendto_one(&me, sptr, ":%s NOTICE %s :%s",
-                       me.name, parv[0], msgtab[i].cmd);
         return 0;
     }
        
@@ -2400,6 +2397,8 @@ m_capab(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #endif
 	else if (strcmp(parv[i], "NICKIPSTR") == 0)
 	    SetNickIPStr(cptr);
+	else if (strcmp(parv[i], "ENICK") == 0)
+	    SetENick(cptr);
     }
 
     return 0;

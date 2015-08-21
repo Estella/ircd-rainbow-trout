@@ -35,12 +35,19 @@
 
 /* Externally defined stuffs */
 extern int user_modes[];
+extern int sent_serial;
+extern int sentalong[MAXCONNECTIONS];
 
 int svspanic = 0; /* Services panic */
 int svsnoop = 0; /* Services disabled all o:lines (off by default) */
 
+#define HIGHEST_SERIAL INT_MAX
+#define INC_SERIAL if(sent_serial == HIGHEST_SERIAL) \
+   { memset(sentalong, 0, sizeof(sentalong)); sent_serial = 0; } \
+   sent_serial++;
+
 void
-hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
+hostchange_qjm (aClient *from, char *oldhost, char *uname, char *qmsg)
 {
     // Basically a "verbatim" rewrite of Charybdis' change_nick_user_host.
     // To be called AFTER the host is set.
@@ -48,7 +55,39 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
     chanMember *cm;
     char mode[10], modeval[NICKLEN * 8 + 9];
     char *mb = mode, *mvb = modeval;
+    Link *channels;
+    chanMember *users;
+    aClient *cptr;
+    int msglen;
+    void *share_buf = NULL;
+    char *sendbuf = malloc(sizeof(char)*769);
+    INC_SERIAL
 
+    msglen=sprintf(sendbuf,":%s!%s@%s QUIT :%s", uname,
+                   from->user->username, oldhost, qmsg);
+
+    if(from->fd >= 0)
+        sentalong[from->fd] = sent_serial;
+    for (channels = from->user->channel; channels; channels = channels->next)
+    {
+        if (!can_send(from, channels->value.chptr, qmsg))
+        {
+            for (users = channels->value.chptr->members; users;
+                 users = users->next)
+            {
+                cptr = users->cptr;
+                if (!MyConnect(cptr) || sentalong[cptr->fd] == sent_serial || (from == cptr))
+                    continue;
+                if((channels->value.chptr->mode.mode & MODE_AUDITORIUM) && (cptr != from) &&
+                   !is_chan_opvoice(cptr, channels->value.chptr) && !is_chan_opvoice(from, channels->value.chptr)) continue;
+                sentalong[cptr->fd] = sent_serial;
+                if (check_fake_direction(from, cptr))
+                    continue;
+                sendto_one(from, cptr, "%s", sendbuf);
+            }
+        }
+    }
+    cptr = from; // XXX find more elegant way of fixing this function? -- janicez [Aug 2015]
     for (clink = cptr->user->channel; clink; clink = clink->next) {
         if (is_chan_superop(cptr, clink->value.chptr)) {
             *mb++ = 'a';
@@ -78,7 +117,6 @@ hostchange_qjm (aClient *cptr, char *oldhost, char *uname)
         *mb++;
         for (cm = clink->value.chptr->members; cm; cm = cm->next) {
         if (cptr == cm->cptr) continue; // from #ronsor on Umbrellix: 22:51:39 <!Ronsor> dont send to user getting svshosted
-        sendto_one(&me, cm->cptr, ":%s!%s@%s PART %s :--- Signed on (SVSHOST: %s) ---", cptr->name, cptr->user->username, oldhost, clink->value.chptr->chname, cptr->user->host);
         sendto_one(&me, cm->cptr, ":%s!%s@%s JOIN %s", cptr->name, cptr->user->username, cptr->user->host, clink->value.chptr->chname);
           if (mb[0] != NULL) sendto_channel_butone_local(cptr, cptr, clink->value.chptr, ":%s!%s@%s MODE %s +%s %s", uname, cptr->user->username, cptr->user->host, clink->value.chptr->chname, mb, modeval);
         }
@@ -687,7 +725,7 @@ int m_svshost(aClient *cptr, aClient *sptr, int parc, char *parv[])
     /* Pass it to all the other servers */
     sendto_serv_butone(cptr, ":%s SVSHOST %s %s", parv[0], parv[1], parv[2]);
     char *oldh=oldhost;
-    hostchange_qjm(acptr, oldh, parv[1]);
+    hostchange_qjm(acptr, oldh, parv[1], "Changing host");
 
     return 0;
 }

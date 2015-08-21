@@ -401,17 +401,19 @@ int del_invite_id(aChannel* chptr, char* invite_id)
 anInvite* is_invited(aClient* cptr, aChannel* chptr)
 {
     char         s[NICKLEN + USERLEN + HOSTLEN + 6];
-    char        *s2;
+    char        *s2, *s3;
     anInvite*    invite;
 
     strcpy(s, make_nick_user_host(cptr->name, cptr->user->username,
-                                  cptr->user->host));
+                                  cptr->user->realhost));
     s2 = make_nick_user_host(cptr->name, cptr->user->username,
                              cptr->hostip);
+    s3 = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->user->mangledhost[0] ? cptr->user->mangledhost : cptr->user->realhost);
 
     for (invite = chptr->invite_list; invite; invite = invite->next)
     {
-        if (!match(invite->invstr, s) || !match(invite->invstr, s2) ||
+        if (!match(invite->invstr, s) || !match(invite->invstr, s2) || !match(invite->invstr, s3) ||
 	    client_matches_cidrstr(cptr, invite->invstr))
             break;
     }
@@ -626,7 +628,7 @@ static int is_banned(aClient *cptr, aChannel *chptr, chanMember *cm)
     aBanExempt *exempt;
 #endif
     char        s[NICKLEN + USERLEN + HOSTLEN + 6];
-    char       *s2;
+    char       *s2, *s3;
     
     if (!IsPerson(cptr))
         return 0;
@@ -641,13 +643,15 @@ static int is_banned(aClient *cptr, aChannel *chptr, chanMember *cm)
     }
 
     strcpy(s, make_nick_user_host(cptr->name, cptr->user->username,
-                                  cptr->user->host));
+                                  cptr->user->realhost));
     s2 = make_nick_user_host(cptr->name, cptr->user->username,
                              cptr->hostip);
+    s3 = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->user->mangledhost[0] ? cptr->user->mangledhost : cptr->user->realhost);
 
 #ifdef EXEMPT_LISTS
     for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
-        if (!match(exempt->banstr, s) || !match(exempt->banstr, s2) ||
+        if (!match(exempt->banstr, s) || !match(exempt->banstr, s2) || !match(exempt->banstr, s3) ||
 	    client_matches_cidrstr(cptr, exempt->banstr))
             return 0;
 #endif
@@ -655,6 +659,7 @@ static int is_banned(aClient *cptr, aChannel *chptr, chanMember *cm)
     for (ban = chptr->banlist; ban; ban = ban->next)
         if ((match(ban->banstr, s) == 0) ||
             (match(ban->banstr, s2) == 0) ||
+            (match(ban->banstr, s3) == 0) ||
 	    client_matches_cidrstr(cptr, ban->banstr))
             break;
 
@@ -684,7 +689,7 @@ static int is_quieted(aClient *cptr, aChannel *chptr, chanMember *cm)
     aBanExempt *exempt;
 #endif
     char        s[NICKLEN + USERLEN + HOSTLEN + 6];
-    char       *s2;
+    char       *s2, *s3;
     
     if (!IsPerson(cptr))
         return 0;
@@ -699,13 +704,15 @@ static int is_quieted(aClient *cptr, aChannel *chptr, chanMember *cm)
     }
 
     strcpy(s, make_nick_user_host(cptr->name, cptr->user->username,
-                                  cptr->user->host));
+                                  cptr->user->realhost));
     s2 = make_nick_user_host(cptr->name, cptr->user->username,
                              cptr->hostip);
+    s3 = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->user->mangledhost[0] ? cptr->user->mangledhost : cptr->user->realhost);
 
 #ifdef EXEMPT_LISTS
     for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
-        if (!match(exempt->banstr, s) || !match(exempt->banstr, s2) ||
+        if (!match(exempt->banstr, s) || !match(exempt->banstr, s2) || !match(exempt->banstr, s3) ||
 	    client_matches_cidrstr(cptr, exempt->banstr))
             return 0;
 #endif
@@ -713,6 +720,7 @@ static int is_quieted(aClient *cptr, aChannel *chptr, chanMember *cm)
     for (ban = chptr->quietlist; ban; ban = ban->next)
         if ((match(ban->banstr, s) == 0) ||
             (match(ban->banstr, s2) == 0) ||
+            (match(ban->banstr, s3) == 0) ||
 	    client_matches_cidrstr(cptr, ban->banstr))
             break;
 
@@ -752,19 +760,23 @@ aBan *nick_is_banned(aChannel *chptr, char *nick, aClient *cptr)
 #ifdef EXEMPT_LISTS
     aBanExempt *exempt;
 #endif
-    char *s, s2[NICKLEN+USERLEN+HOSTLEN+6];
+    char *s, *s3, s2[NICKLEN+USERLEN+HOSTLEN+6];
     
     if (!IsPerson(cptr)) return NULL;
     
-    strcpy(s2, make_nick_user_host(nick, cptr->user->username,
-                                   cptr->user->host));
-    s = make_nick_user_host(nick, cptr->user->username, cptr->hostip);
+    strcpy(s2, make_nick_user_host(cptr->name, cptr->user->username,
+                                  cptr->user->realhost));
+    s = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->hostip);
+    s3 = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->user->mangledhost[0] ? cptr->user->mangledhost : cptr->user->realhost);
 
 #ifdef EXEMPT_LISTS
     for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
         if (exempt->type == MTYP_FULL &&
             ((match(exempt->banstr, s2) == 0) ||
              (match(exempt->banstr, s) == 0) ||
+             (match(exempt->banstr, s3) == 0) ||
 	     client_matches_cidrstr(cptr, exempt->banstr)))
             return NULL;
 #endif
@@ -773,6 +785,7 @@ aBan *nick_is_banned(aChannel *chptr, char *nick, aClient *cptr)
         if (ban->type == MTYP_FULL &&        /* only check applicable bans */
             ((match(ban->banstr, s2) == 0) ||    /* check host before IP */
              (match(ban->banstr, s) == 0) ||
+             (match(ban->banstr, s3) == 0) ||
 	     client_matches_cidrstr(cptr, ban->banstr)))
             break;
     return (ban);
@@ -784,19 +797,23 @@ aQuiet *nick_is_quieted(aChannel *chptr, char *nick, aClient *cptr)
 #ifdef EXEMPT_LISTS
     aBanExempt *exempt;
 #endif
-    char *s, s2[NICKLEN+USERLEN+HOSTLEN+6];
+    char *s, *s3, s2[NICKLEN+USERLEN+HOSTLEN+6];
     
     if (!IsPerson(cptr)) return NULL;
     
-    strcpy(s2, make_nick_user_host(nick, cptr->user->username,
-                                   cptr->user->host));
-    s = make_nick_user_host(nick, cptr->user->username, cptr->hostip);
+    strcpy(s2, make_nick_user_host(cptr->name, cptr->user->username,
+                                  cptr->user->realhost));
+    s = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->hostip);
+    s3 = make_nick_user_host(cptr->name, cptr->user->username,
+                             cptr->user->mangledhost[0] ? cptr->user->mangledhost : cptr->user->realhost);
 
 #ifdef EXEMPT_LISTS
     for (exempt = chptr->banexempt_list; exempt; exempt = exempt->next)
         if (exempt->type == MTYP_FULL &&
             ((match(exempt->banstr, s2) == 0) ||
              (match(exempt->banstr, s) == 0) ||
+             (match(exempt->banstr, s3) == 0) ||
 	     client_matches_cidrstr(cptr, exempt->banstr)))
             return NULL;
 #endif
@@ -805,6 +822,7 @@ aQuiet *nick_is_quieted(aChannel *chptr, char *nick, aClient *cptr)
         if (ban->type == MTYP_FULL &&        /* only check applicable bans */
             ((match(ban->banstr, s2) == 0) ||    /* check host before IP */
              (match(ban->banstr, s) == 0) ||
+             (match(ban->banstr, s3) == 0) ||
 	     client_matches_cidrstr(cptr, ban->banstr)))
             break;
     return (ban);
@@ -2144,7 +2162,7 @@ static int set_mode(aClient *cptr, aClient *sptr, aChannel *chptr,
             if(change=='+')
             {
                 cm->flags|=(*modes=='o' ? CHFL_CHANOP : *modes=='h' ? CHFL_HALFOP : *modes=='a' ? CHFL_SUPEROP : CHFL_VOICE);
-                if(chptr->mode.mode & MODE_AUDITORIUM) sendto_channel_butserv_noopvoice(chptr, who, ":%s JOIN :%s", who->name, chptr->chname);
+                if(chptr->mode.mode & MODE_AUDITORIUM) sendto_channel_butserv_noopvoice(chptr, who, ":%s JOIN %s", who->name, chptr->chname);
             }
             else
             {
@@ -3566,10 +3584,10 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
             sendto_serv_butone(cptr, CliSJOINFmt, parv[0], chptr->channelts,
                                name);
         else 
-            sendto_serv_butone(cptr, ":%s JOIN :%s", parv[0], name);
+            sendto_serv_butone(cptr, ":%s JOIN %s", parv[0], name);
 
         /* notify all other users on the new channel */
-        sendto_channel_butserv(chptr, sptr, ":%s JOIN :%s", parv[0], name);
+        sendto_channel_butserv(chptr, sptr, ":%s JOIN %s", parv[0], name);
                 
         if (MyClient(sptr)) 
         {
@@ -3650,7 +3668,7 @@ int m_sajoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         add_user_to_channel(chptr, sptr, 0);
         sendto_serv_butone(cptr, CliSJOINFmt, parv[0], chptr->channelts, name);
-        sendto_channel_butserv(chptr, sptr, ":%s JOIN :%s", parv[0], name);
+        sendto_channel_butserv(chptr, sptr, ":%s JOIN %s", parv[0], name);
         if(MyClient(sptr))
         {
             if(chptr->topic[0] != '\0')
@@ -5095,7 +5113,7 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
         {
             add_user_to_channel(chptr, sptr, 0);
             joinrate_dojoin(chptr, sptr);
-            sendto_channel_butserv(chptr, sptr, ":%s JOIN :%s", parv[0],
+            sendto_channel_butserv(chptr, sptr, ":%s JOIN %s", parv[0],
                                    parv[2]);
         }
 
@@ -5555,7 +5573,7 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
         if (!IsMember(acptr, chptr)) 
         {
             add_user_to_channel(chptr, acptr, fl);
-            sendto_channel_butserv(chptr, acptr, ":%s JOIN :%s", s, parv[2]);
+            sendto_channel_butserv(chptr, acptr, ":%s JOIN %s", s, parv[2]);
         }
         if (keepnewmodes)
         {

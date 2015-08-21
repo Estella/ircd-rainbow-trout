@@ -110,6 +110,7 @@ void init_globals()
     strncpyzt(Network_Name, DEFAULT_NETWORK, sizeof(Network_Name));
     strncpyzt(Services_Name, DEFAULT_SERVICES_NAME, sizeof(Services_Name));
     strncpyzt(Stats_Name, DEFAULT_STATS_NAME, sizeof(Stats_Name));
+    strncpyzt(CloakKey, "", sizeof(CloakKey));
     strncpyzt(NS_Register_URL, DEFAULT_NS_REGISTER_URL,
               sizeof(NS_Register_URL));
     strncpyzt(Network_Kline_Address, DEFAULT_NKLINE_ADDY,
@@ -1037,6 +1038,12 @@ confadd_options(cVar *vars[], int lnum)
             tmp->type = NULL;
             new_confopts |= FLAGS_WGMONURL;
             strncpyzt(ProxyMonURL, tmp->value, sizeof(ProxyMonURL));
+        }
+        else if(tmp->type && (tmp->type->flag & OPTF_CLOAKKEY))
+        {
+            tmp->type = NULL;
+            new_confopts |= FLAGS_CLOAKKEY;
+            strncpyzt(CloakKey, tmp->value, sizeof(CloakKey));
         }
         else if(tmp->type && (tmp->type->flag & OPTF_NSREGURL))
         {

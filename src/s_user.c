@@ -88,8 +88,9 @@ int  user_modes[] =
 #ifdef NO_OPER_FLOOD
     UMODE_F, 'F',
 #endif
-    UMODE_x, 'x',
-    UMODE_X, 'X',
+    UMODE_CLOAK, 'x',
+    UMODE_x, 'Q',
+    UMODE_X, 'q',
     UMODE_j, 'j',
     UMODE_S, 'S',
     UMODE_K, 'K',
@@ -613,7 +614,6 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
 #endif
                 
         strncpyzt(user->host, sptr->sockhost, HOSTLEN + 1);
-                
         dots = 0;
         p = user->host;
         bad_dns = NO;
@@ -965,7 +965,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         strncpyzt(user->username, username, USERLEN + 1);
 
     strncpyzt(user->rusername, username, USERLEN + 1);
-    strncpyzt(user->rhost, sptr->user->host, HOSTLEN + 1);
+    if (!user->realhost[0]) strncpyzt(user->realhost, sptr->user->host, HOSTLEN + 1);
 
     SetClient(sptr);
     /* Increment our total user count here */
@@ -973,7 +973,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         Count.max_tot = Count.total;
 
     if(IsInvisible(sptr)) Count.invisi++;
-        
+
     if (MyConnect(sptr))
     {
         set_effective_class(sptr);
@@ -1005,6 +1005,15 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
 #ifdef FORCE_EVERYONE_HIDDEN
         sptr->umode |= UMODE_I;
 #endif
+
+        if(call_hooks(CHOOK_PREACCESS, sptr) == FLUSH_BUFFER)
+            return FLUSH_BUFFER;
+
+        if (CloakKey[0]) {
+            sptr->umode |= UMODE_CLOAK;
+            strcpy(sptr->user->host, sptr->user->mangledhost);
+            hostchange_qjm(sptr, sptr->user->realhost, sptr->name, "Set +x on self");
+        }
 
 #if (RIDICULOUS_PARANOIA_LEVEL>=1)
         if(!BadPtr(sptr->passwd) && (pwaconf->flags & CONF_FLAGS_I_OPERPORT))
@@ -2296,12 +2305,12 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
     
     if (!MyConnect(sptr))
     {
+        strncpyzt(user->host, host, sizeof(user->host));
         sendto_realops_lev(CCONN_LEV, "Client connecting: %s (%s@%s) [%s] %s",
                            nick, user->username, user->host, sptr->hostip,
                            "Remote");
 
         user->server = find_or_add(server);
-        strncpyzt(user->host, host, sizeof(user->host));
     } 
     else
     {
@@ -2312,6 +2321,7 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
             return 0;
         }
         sptr->umode |= (USER_UMODES & atoi(host));
+
 #ifndef NO_DEFAULT_INVISIBLE
         sptr->umode |= UMODE_i;
 #endif
@@ -2325,8 +2335,9 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
 #ifdef NO_USER_OPERKILLS
         sptr->umode &= ~UMODE_s;
 #endif
-        strncpyzt(user->host, host, sizeof(user->host));
         user->server = me.name;
+        strncpyzt(user->host, host, sizeof(user->host));
+
         if (cb != NULL) sptr->cb = &cb;
         else sptr->cb = NULL;
     }
@@ -3265,14 +3276,32 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 case '\t':
                     break;
                 case 'r':
-                case 'x':
-                case 'X':
+                case 'Q':
+                case 'q':
                 case 'S':
                     break; /* users can't set themselves +r,+x,+X or +S! */
                 case 'A':
                     /* set auto +a if user is setting +A */
                     if (MyClient(sptr) && (what == MODE_ADD))
                         sptr->umode |= UMODE_a;
+                    if (*m == (char) (*(s + 1)))
+                    {
+                        if (what == MODE_ADD)
+                            sptr->umode |= flag;
+                        else
+                             sptr->umode &= ~flag;
+                        break;
+                    }
+                    break; // XXX ugly hack - janicez
+                case 'x':
+                    if (what == MODE_ADD && CloakKey[0]) {
+                        strcpy(sptr->user->host, sptr->user->mangledhost);
+                        hostchange_qjm(sptr, sptr->user->realhost, sptr->name, "Set +x on self");
+                    }
+                    if (what == MODE_DEL && CloakKey[0]) { // Server admin's responsibility to set up a cloaking module!!!@@@@#####heh - janicez
+                        strcpy(sptr->user->host, sptr->user->realhost);
+                        hostchange_qjm(sptr, sptr->user->mangledhost, sptr->name, "Set -x on self");
+                    }
                 default:
                     for (s = user_modes; (flag = *s); s += 2)
                         if (*m == (char) (*(s + 1)))

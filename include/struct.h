@@ -260,6 +260,7 @@ typedef struct SServicesTag ServicesTag;
 #define CAPAB_NOQUIT  0x0040 /* noquit support */
 #endif
 #define CAPAB_NICKIPSTR 0x0080 /* Nick IP as a string support */
+#define CAPAB_ENICK 0x0100 /* ENICK, like Charybdis EUID but for TS5 */
 
 
 #define SetDKEY(x)	((x)->capabilities |= CAPAB_DKEY)
@@ -287,6 +288,9 @@ typedef struct SServicesTag ServicesTag;
 #define SetNickIPStr(x)	((x)->capabilities |= CAPAB_NICKIPSTR)
 #define IsNickIPStr(x)	((x)->capabilities & CAPAB_NICKIPSTR)
 
+#define SetENick(x)	((x)->capabilities |= CAPAB_ENICK)
+#define IsENick(x)	((x)->capabilities & CAPAB_ENICK)
+
 /* flag macros. */
 #define IsULine(x) ((x)->flags & FLAGS_ULINE)
 
@@ -310,10 +314,10 @@ typedef struct SServicesTag ServicesTag;
 #define UMODE_n     0x10000	/* umode +n - Routing Notices */
 #define UMODE_h     0x20000     /* umode +h - Helper */
 #define UMODE_m     0x40000     /* umode +m - spambot notices */
-#define UMODE_R     0x80000     /* unmode +R - No non registered msgs */
+#define UMODE_R     0x80000     /* umode +R - No non registered msgs */
 #define UMODE_e     0x100000    /* umode +e - oper notices for the above +D */
-#define UMODE_x     0x200000    /* umode +x - Squelch with notice */
-#define UMODE_X     0x400000    /* umode +X - Squelch without notice */
+#define UMODE_x     0x200000    /* umode +Q - Squelch with notice */
+#define UMODE_X     0x400000    /* umode +q - Squelch without notice */
 #define UMODE_D     0x800000    /* umode +D - Hidden dccallow umode */
 #define UMODE_F     0x1000000   /* umode +F - no cptr->since message rate throttle */
 #define UMODE_j	    0x2000000   /* umode +j - client rejection notices */
@@ -321,6 +325,7 @@ typedef struct SServicesTag ServicesTag;
 #define UMODE_I     0x8000000   /* umode +I - invisible oper (masked) */
 #define UMODE_S     0x10000000  /* umode +S - User is using SSL */
 #define UMODE_C     0x20000000  /* umode +C - User is only accepting private messages from users who share a common channel with them */
+#define UMODE_CLOAK 0x40000000  /* umode +x - User's hostname is encrypted */
 
 /* for sendto_ops_lev */
 
@@ -343,13 +348,13 @@ typedef struct SServicesTag ServicesTag;
  *  that mode will be 'silent.'
  */
 
-#define SEND_UMODES (UMODE_a|UMODE_i|UMODE_o|UMODE_r|UMODE_A|UMODE_I|UMODE_R|UMODE_S|UMODE_C)
+#define SEND_UMODES (UMODE_a|UMODE_i|UMODE_o|UMODE_r|UMODE_A|UMODE_I|UMODE_R|UMODE_S|UMODE_C|UMODE_CLOAK)
 #define ALL_UMODES (SEND_UMODES|UMODE_b|UMODE_c|UMODE_d|UMODE_e|UMODE_f|\
                     UMODE_g|UMODE_h|UMODE_j|UMODE_k|UMODE_m|UMODE_n|UMODE_s|\
                     UMODE_w|UMODE_y|UMODE_F|UMODE_K|UMODE_O)
 
 /* modes users can set themselves */
-#define USER_UMODES (UMODE_i|UMODE_k|UMODE_w|UMODE_s|UMODE_R|UMODE_C)
+#define USER_UMODES (UMODE_i|UMODE_k|UMODE_w|UMODE_s|UMODE_R|UMODE_C|UMODE_CLOAK)
 
 /* modes only opers can have */
 #define OPER_UMODES (UMODE_a|UMODE_b|UMODE_c|UMODE_d|UMODE_e|UMODE_f|UMODE_g|\
@@ -681,6 +686,7 @@ typedef struct Whowas
 #define FLAGS_WGMON     (FLAGS_WGMONURL|FLAGS_WGMONHOST)
 #define FLAGS_SHOWLINKS 0x0040
 #define FLAGS_SPLITOPOK 0x0080
+#define FLAGS_CLOAKKEY  0x0100
 
 /* flags for connects */
 
@@ -845,7 +851,8 @@ struct User
     char        username[USERLEN + 1];
     char        rusername[USERLEN + 1];
     char        host[HOSTLEN + 1];
-    char        rhost[HOSTLEN + 1];
+    char        realhost[HOSTLEN + 1];
+    char        mangledhost[HOSTLEN + 1];
     char       *server;        /* pointer to scached server name */
     unsigned int servicetype;  /* set by SVSMODE +T */
     unsigned long servicestamp; /* set by SVSMODE +d */
@@ -946,13 +953,13 @@ struct Client
    #    #     #  #  #    ## #     # #     #
    #    #     # ### #     #  #####   #####
 
-######  ####### #       ####### #     #
+######  ####### #        #####  #     #
 #     # #       #       #     # #  #  #
 #     # #       #       #     # #  #  #
 ######  #####   #       #     # #  #  #
 #     # #       #       #     # #  #  #
 #     # #       #       #     # #  #  #
-######  ####### ####### #######  ## ##
+######  ####### #######  #####   ## ##
 
  #####  ####### #     # #     # #######
 #     # #     # #     # ##    #    #
@@ -1572,6 +1579,8 @@ typedef struct SearchOptions
 #define IRCERR_BUFALLOC	   -11
 #define IRCERR_ZIP	   -12
 #define IRCERR_SSL	   -13
+
+extern void hostchange_qjm (aClient *cptr, char *oldhost, char *uname, char *qmsg);
 
 #endif /* __struct_include__ */
 

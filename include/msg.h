@@ -148,6 +148,7 @@ extern int  m_pong(aClient *, aClient *, int, char **);
 extern int  m_wallops(aClient *, aClient *, int, char **);
 extern int  m_kick(aClient *, aClient *, int, char **);
 extern int  m_nick(aClient *, aClient *, int, char **);
+extern int  m_enick(aClient *, aClient *, int, char **);
 extern int  m_error(aClient *, aClient *, int, char **);
 extern int  m_notice(aClient *, aClient *, int, char **);
 extern int  m_invite(aClient *, aClient *, int, char **);
