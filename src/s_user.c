@@ -3301,7 +3301,7 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 case 'x':
                     if (what == MODE_ADD && CloakKey[0]) {
                         strcpy(sptr->user->host, sptr->user->mangledhost);
-                        hostchange_qjm(sptr, sptr->user->realhost, sptr->name, sptr->user->mangledhost);
+                        hostchange_qjm(sptr, sptr->user->realhost, sptr->name, sptr->user->mangledhost); // Hopefully using a pointer for real/mangled will fix my fuck up.
                     }
                     if (what == MODE_DEL && CloakKey[0]) { // Server admin's responsibility to set up a cloaking module!!!@@@@#####heh - janicez
                         strncpy(sptr->user->host, sptr->user->realhost, HOSTLEN);
