@@ -1069,9 +1069,11 @@ void sendto_serv_butone_nickipstr(aClient *one, int flag, char *pattern, ...)
         cptr = lp->value.cptr;
         if (one && cptr == one->from)
             continue;
-	if (flag && !IsNickIPStr(cptr))
+	if (flag == 2 && !IsENick(cptr))
 	    continue;
-	if (!flag && IsNickIPStr(cptr))
+	if (flag == 1 && !IsNickIPStr(cptr))
+	    continue;
+	if (flag == 0 && IsNickIPStr(cptr))
 	    continue;
         send_fdlist.entry[++k] = cptr->fd;
     }
