@@ -614,6 +614,8 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
 #endif
                 
         strncpyzt(user->host, sptr->sockhost, HOSTLEN + 1);
+        strncpyzt(user->realhost, sptr->sockhost, HOSTLEN + 1);
+
         dots = 0;
         p = user->host;
         bad_dns = NO;
@@ -965,7 +967,6 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         strncpyzt(user->username, username, USERLEN + 1);
 
     strncpyzt(user->rusername, username, USERLEN + 1);
-    if (!user->realhost[0]) strncpyzt(user->realhost, sptr->user->host, HOSTLEN + 1);
 
     SetClient(sptr);
     /* Increment our total user count here */

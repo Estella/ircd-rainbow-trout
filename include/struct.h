@@ -851,8 +851,8 @@ struct User
     char        username[USERLEN + 1];
     char        rusername[USERLEN + 1];
     char        host[HOSTLEN + 1];
-    char       *realhost;
-    char       *mangledhost;
+    char        realhost[HOSTLEN + 1];
+    char        mangledhost[HOSTLEN + 1];
     char       *server;        /* pointer to scached server name */
     unsigned int servicetype;  /* set by SVSMODE +T */
     unsigned long servicestamp; /* set by SVSMODE +d */
