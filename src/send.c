@@ -1071,6 +1071,8 @@ void sendto_serv_butone_nickipstr(aClient *one, int flag, char *pattern, ...)
             continue;
 	if (flag == 2 && !IsENick(cptr))
 	    continue;
+	if (flag == 1 && IsENick(cptr))
+	    continue;
 	if (flag == 1 && !IsNickIPStr(cptr))
 	    continue;
 	if (flag == 0 && IsNickIPStr(cptr))
