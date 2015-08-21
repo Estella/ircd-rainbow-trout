@@ -1005,8 +1005,8 @@ int m_enick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
 	    if (parc==13)
 	    {
-                (void) strcpy(sptr->user->realhost, parv[9]); // ENICK strcpying realhost to realhost's place ;p - janicez
-                (void) strcpy(sptr->user->mangledhost, parv[10]); // ENICK strcpying realhost to realhost's place ;p - janicez
+                (void) strlcpy(sptr->user->realhost, parv[9], HOSTLEN); // ENICK strcpying realhost to realhost's place ;p - janicez
+                (void) strlcpy(sptr->user->mangledhost, parv[10], HOSTLEN); // ENICK strcpying realhost to realhost's place ;p - janicez
 		return do_user(nick, cptr, sptr, parv[5], parv[6],
 			       parv[7], strtoul(parv[8], NULL, 0),
 			       "0.0.0.0", parv[11], NULL);
