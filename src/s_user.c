@@ -1842,7 +1842,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         /* super targets get special treatment */
         if (IsULine(acptr))
         {
-            report_error("Checkpoint: U: check in m_message. Next checkpoint at bottom of U:check.");
+            sendto_gnotice("Checkpoint: U: check in m_message. Next checkpoint at bottom of U:check.");
             AliasInfo *ai;
 
             if (notice && (confopts & FLAGS_SERVHUB) && (acptr->uplink->serv->uflags & ULF_NONOTICE))
@@ -1877,7 +1877,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             }
 
             /* no flood/dcc/whatever checks, just send */
-            report_error("Checkpoint: Message to service :%s %s %s", parv[0], cmd, target);
+            sendto_gnotice("Checkpoint: Message to service :%s %s %s", parv[0], cmd, target);
             sendto_one(sptr, acptr, ":%s %s %s :%s", parv[0], cmd, target,
                        parv[2]);
             continue;
