@@ -1194,7 +1194,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
 				 sptr->user->servicestamp,
-				 cipntoa(sptr), user->realhost, user->mangledhost, sptr->info);
+				 cipntoa(sptr), user->realhost[0] ? user->realhost : user->host, user->mangledhost[0] ? user->host : user->host, sptr->info);
     sendto_serv_butone_nickipstr(cptr, 1, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
