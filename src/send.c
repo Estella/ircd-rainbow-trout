@@ -515,10 +515,6 @@ static int send_message(aClient *from, aClient *to, char *msg, int len, void* sb
         if (SQinK > (to->lastsq + 8))
             send_queued(to);
     }
-    else if (to->cb)
-    {
-        parse2cb(from, to, msg, msg+len);
-    }
     else
     {
         if (SQinK > (to->lastsq + 4))
