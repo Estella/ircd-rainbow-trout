@@ -2402,6 +2402,114 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
     return 0;
 }
 
+int 
+do_euser(char *nick, aClient *cptr, aClient *sptr, char *username, char *host, 
+        char *server, unsigned long serviceid, char *ip, char *realname, char *realhost, char *mangledhost, int (*cb)CCB)
+{
+    anUser     *user;
+    
+    user = make_user(sptr);
+    
+    /*
+     * changed the goto into if-else...   -Taner 
+     * ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ GOOD FOR YOU Taner!!! - Dianora 
+     */
+    
+    if (!MyConnect(sptr))
+    {
+        strncpyzt(user->host, host, sizeof(user->host));
+        sendto_realops_lev(CCONN_LEV, "Client connecting: %s (%s@%s) [%s] %s",
+                           nick, user->username, user->host, sptr->hostip,
+                           "Remote");
+
+        user->server = find_or_add(server);
+        strncpyzt(user->realhost, realhost, HOSTLEN+1);
+        strncpyzt(user->mangledhost, mangledhost, HOSTLEN+1);
+    } 
+    else
+    {
+        if (!IsUnknown(sptr))
+        {
+          sendto_one(&me, sptr, err_str(ERR_ALREADYREGISTRED),
+                       me.name, nick);
+            return 0;
+        }
+        sptr->umode |= (USER_UMODES & atoi(host));
+
+#ifndef NO_DEFAULT_INVISIBLE
+        sptr->umode |= UMODE_i;
+#endif
+#ifdef USE_SSL
+        if(IsSSL(sptr))
+            sptr->umode |= UMODE_S;
+#endif
+#ifdef NO_USER_SERVERKILLS
+        sptr->umode &= ~UMODE_k;
+#endif
+#ifdef NO_USER_OPERKILLS
+        sptr->umode &= ~UMODE_s;
+#endif
+        user->server = me.name;
+        strncpyzt(user->host, host, sizeof(user->host));
+
+        if (cb != NULL) sptr->cb = &cb;
+        else sptr->cb = NULL;
+    }
+    strncpyzt(sptr->info, realname, sizeof(sptr->info));
+    sptr->user->servicestamp = serviceid;
+    if (!MyConnect(sptr))  
+    {
+        sptr->cb = NULL;
+	if (inet_pton(AF_INET, ip, &sptr->ip.ip4) == 1)
+	{
+	    if (sptr->ip.ip4.s_addr != htonl(1))
+		sptr->ip_family = AF_INET;
+	    else
+		sptr->ip_family = 0;
+	}
+	else if (inet_pton(AF_INET6, ip, &sptr->ip.ip6) == 1)
+	    sptr->ip_family = AF_INET6;
+	else
+	{
+	    char *end;
+	    unsigned long l;
+
+	    l = ntohl(strtoul(ip, &end, 10));
+	    if (*ip != '\0' && *end == '\0')
+	    {
+		if (l != htonl(1))
+		    sptr->ip_family = AF_INET;
+		else
+		    sptr->ip_family = 0;
+
+		sptr->ip.ip4.s_addr = l;
+		ip = inetntoa((char *)&sptr->ip);
+	    }
+	    else
+		sptr->ip_family = 0;
+	}
+
+        /* add non-local clients to the throttle checker.  obviously, we only
+         * do this for REMOTE clients!@$$@!  throttle_check() is called
+         * elsewhere for the locals! -wd */
+#ifdef THROTTLE_ENABLE
+	if (sptr->ip_family == 0)
+	    ;
+	else if (sptr->ip_family == AF_INET && sptr->ip.ip4.s_addr == 0)
+	    ;
+	else
+	    throttle_check(ip, -1, sptr->tsinfo);
+#endif
+    }
+    if(MyConnect(sptr))
+        sptr->oflag=0;
+    if (sptr->name[0])          /* NICK already received, now I have USER... */
+        return register_user(cptr, sptr, sptr->name, username, ip);
+    else
+        strncpyzt(sptr->user->username, username, USERLEN + 1);
+    return 0;
+}
+
 /*
  * m_quit 
  * parv[0] = sender prefix 

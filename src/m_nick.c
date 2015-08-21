@@ -34,6 +34,8 @@
 
 extern int do_user(char *, aClient *, aClient *, char *, char *, char *,
 		   unsigned long, char *, char *, int (*cb)CCB);
+extern int do_euser(char *, aClient *, aClient *, char *, char *, char *,
+		   unsigned long, char *, char *, char *, char *, int (*cb)CCB);
 
 extern int register_user(aClient *, aClient *, char *, char *, char *);
 extern int del_dccallow(aClient *, aClient *, int);
@@ -1005,11 +1007,9 @@ int m_enick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    }
 	    if (parc==13)
 	    {
-                strncpyzt(sptr->user->mangledhost, parv[11], HOSTLEN+1); // ENICK strcpying realhost to realhost's place ;p - janicez
-                strncpyzt(sptr->user->realhost, parv[10], HOSTLEN+1); // ENICK strcpying realhost to realhost's place ;p - janicez
-		return do_user(nick, cptr, sptr, parv[5], parv[6],
+		return do_euser(nick, cptr, sptr, parv[5], parv[6],
 			       parv[7], strtoul(parv[8], NULL, 0),
-			       parv[9], parv[12], NULL);
+			       parv[9], parv[12], parv[10], parv[11], NULL); // Dup of do_user that fixes this shit
 	    }
 	}
     }
