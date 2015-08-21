@@ -51,13 +51,13 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
             ubuf[0] = '+';
             ubuf[1] = '\0';
         }
-	if (IsENick(cptr) && *acptr->user->realhost)
+	if (IsENick(cptr))
         {
 	  sendto_one(&me, cptr, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s :%s",
 			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
 			   acptr->user->username, acptr->user->host,
 			   acptr->user->server, acptr->user->servicestamp,
-			   cipntoa(acptr), acptr->user->realhost, acptr->user->mangledhost[0] ? acptr->user->mangledhost : "*", acptr->info);
+			   cipntoa(acptr), acptr->user->realhost[0] ? acptr->user->realhost : acptr->user->host, acptr->user->mangledhost[0] ? acptr->user->mangledhost : "*", acptr->info);
         } else if (IsNickIPStr(cptr))
 	{
 	  sendto_one(&me, cptr, "NICK %s %d %ld %s %s %s %s %lu %s :%s",

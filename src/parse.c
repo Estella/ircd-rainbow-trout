@@ -77,7 +77,7 @@ void delcommand(char *command) {
 void init_functab(void) {
     msgstruct(MSG_PRIVATE,   &m_private,   MAXPARA,  MF_RIDLE,  0);
     msgstruct(MSG_NICK,      &m_nick,      MAXPARA,  MF_UNREG,  0);
-    msgstruct("ENICK",       &m_enick,     MAXPARA,  MF_UNREG,  0);
+    msgstruct("ENICK",       &m_enick,     MAXPARA,  0,         0);
     msgstruct(MSG_NOTICE,    &m_notice,    MAXPARA,  0,         0);
     msgstruct(MSG_JOIN,      &m_join,      MAXPARA,  0,         0);
     msgstruct(MSG_MODE,      &m_mode,      MAXPARA,  0,         0);

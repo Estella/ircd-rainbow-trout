@@ -117,7 +117,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
      * parc == 4 on a normal server-to-server client nick change
      * parc == 11 on a normal TS style server-to-server NICK introduction
      */
-    if ((IsServer(sptr) || (parc > 4)) && (parc < 12))
+    if ((IsServer(sptr) || (parc > 4)) && (parc < 11))
     {
 	/*
 	 * We got the wrong number of params. Someone is trying to trick
