@@ -1683,31 +1683,6 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             s++;
         }
 
-#ifdef USE_NEW_COMMAND_SYSTEM
-        char *targlc = strdup(target);
-        int tlx = 0; struct PUser *npu = NULL; struct PuCommand *npc = NULL;
-      if (acptr != 1 || 0!=strcasecmp(targlc, "AUTH")) {
-        for (npu=pusers;npu!=0;npu=npu->hh.next)
-            if (npu != NULL && !strcasecmp(target, npu->unick)) break;
-        if ((pu = npu) != NULL) {
-            char *x = strdup(parv[2]), *y = strdup(parv[2]);
-            if (NULL!=strchr(parv[2], ' ')) sscanf(parv[2], "%s ", x);
-            for (i = 0; i < strlen(x)+1; i++) *y++;
-            sendto_gnotice("Services command x=%s y=%s from=%s", x, y, cptr->name);
-            if (pu->cmds != 0) for (npc=pu->cmds;npc!=NULL;npc=npc->hh.next)
-                if (x != NULL && npc->cmd != NULL && !strncasecmp(x, npc->cmd, strlen(npc->cmd))) {pc=npc;break;}
-            if (0!=strcmp(y, "") && npc != NULL) (*npc->func)(cptr, sptr, y);
-#if 0
-            else if ((npc = pu->cmds) != NULL) {
-                HASH_FIND_STR(npc, "UNKNOWN", pc); // Look for an unknown command handler
-                if (pc != NULL) (*pc->func)(cptr, sptr, parv[2]);
-            }
-#endif
-            continue;
-        }
-      }
-#endif // USE_NEW_COMMAND_SYSTEM
-
         /* target is a channel */
         if (IsChannelName(s))
         {
@@ -1860,9 +1835,6 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         if (!acptr || (s && mycmp(acptr->user->server, s)))
         {
             if (!notice
-#ifdef USE_NEW_COMMAND_SYSTEM
-                && pu == NULL
-#endif
             )
               sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
                            target);
