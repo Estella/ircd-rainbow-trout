@@ -3296,11 +3296,11 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 case 'x':
                     if (what == MODE_ADD && CloakKey[0]) {
                         strcpy(sptr->user->host, sptr->user->mangledhost);
-                        hostchange_qjm(sptr, sptr->user->realhost, sptr->name, "Set +x on self");
+                        hostchange_qjm(sptr, sptr->user->realhost, sptr->name, sptr->user->mangledhost);
                     }
                     if (what == MODE_DEL && CloakKey[0]) { // Server admin's responsibility to set up a cloaking module!!!@@@@#####heh - janicez
-                        strcpy(sptr->user->host, sptr->user->realhost);
-                        hostchange_qjm(sptr, sptr->user->mangledhost, sptr->name, "Set -x on self");
+                        strncpy(sptr->user->host, sptr->user->realhost, HOSTLEN);
+                        hostchange_qjm(sptr, sptr->user->mangledhost, sptr->name, sptr->user->realhost);
                     }
                 default:
                     for (s = user_modes; (flag = *s); s += 2)
