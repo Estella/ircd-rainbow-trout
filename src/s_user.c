@@ -378,7 +378,7 @@ hunt_server(aClient *cptr, aClient *sptr, char *command, int server,
 
     if (!acptr)
     {
-      sendto_one(&me, sptr, err_str(ERR_NOSUCHSERVER), me.name, parv[0],
+      sendto_one(sptr, sptr, err_str(ERR_NOSUCHSERVER), me.name, parv[0],
                    parv[server]);
         return HUNTED_NOSUCH;
     }
@@ -386,7 +386,7 @@ hunt_server(aClient *cptr, aClient *sptr, char *command, int server,
 #ifdef NO_USER_OPERTARGETED_COMMANDS
     if (MyClient(sptr) && !IsAnOper(sptr) && IsUmodeI(acptr))
     {
-      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return HUNTED_NOSUCH;
     }
 #endif
@@ -394,7 +394,7 @@ hunt_server(aClient *cptr, aClient *sptr, char *command, int server,
     if(IsULine(acptr) && (svspanic>1 || (svspanic>0 && !IsARegNick(sptr))) && !IsOper(sptr))
     {
         if(MyClient(sptr))
-          sendto_one(&me, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
+          sendto_one(sptr, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
                        acptr->name);
         return HUNTED_NOSUCH;
     }
@@ -657,7 +657,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         
         if (bad_dns) 
         {
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- You have a bad "
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- You have a bad "
                        "character in your hostname", me.name, cptr->name);
             strcpy(user->host, sptr->hostip);
             strcpy(sptr->sockhost, sptr->hostip);
@@ -676,13 +676,13 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
             user->username[USERLEN] = '\0';
 #ifdef IDENTD_COMPLAIN
             /* tell them to install identd -Taner */
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- It seems that you "
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- It seems that you "
                        "don't have identd installed on your host.",
                        me.name, cptr->name);
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- If you wish to "
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- If you wish to "
                        "have your username show up without the ~ (tilde),",
                        me.name, cptr->name);
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- then install "
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- then install "
                        "identd.", me.name, cptr->name);
             /* end identd hack */
 #endif
@@ -714,7 +714,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
             if(!StrEq(sptr->passwd, pwaconf->passwd)) 
             {
                 ircstp->is_ref++;
-              sendto_one(&me, sptr, err_str(ERR_PASSWDMISMATCH),
+              sendto_one(sptr, sptr, err_str(ERR_PASSWDMISMATCH),
                            me.name, parv[0]);
                 return exit_client(cptr, sptr, &me, "Bad Password");
             }
@@ -983,22 +983,22 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         reset_sock_opts(sptr->fd, 0);
         /* End sock_opt hack */
 #endif
-      sendto_one(&me, sptr, rpl_str(RPL_WELCOME), me.name, nick, Network_Name,
+      sendto_one(sptr, sptr, rpl_str(RPL_WELCOME), me.name, nick, Network_Name,
                    nick, sptr->user->username, sptr->user->host);
         /*
          * This is a duplicate of the NOTICE but see below...
          * um, why were we hiding it? they did make it on to the
          * server and all.. -wd
          */
-      sendto_one(&me, sptr, rpl_str(RPL_YOURHOST), me.name, nick, me.name,
+      sendto_one(sptr, sptr, rpl_str(RPL_YOURHOST), me.name, nick, me.name,
                    version);
 #ifdef  IRCII_KLUDGE
         /* Don't mess with this one - IRCII needs it! -Avalon */
-      sendto_one(&me, sptr, "NOTICE %s :*** Your host is %s, running version %s",
+      sendto_one(sptr, sptr, "NOTICE %s :*** Your host is %s, running version %s",
                    nick, me.name, version);
 #endif
-      sendto_one(&me, sptr, rpl_str(RPL_CREATED), me.name, nick, creation);
-      sendto_one(&me, sptr, rpl_str(RPL_MYINFO), me.name, parv[0],
+      sendto_one(sptr, sptr, rpl_str(RPL_CREATED), me.name, nick, creation);
+      sendto_one(sptr, sptr, rpl_str(RPL_MYINFO), me.name, parv[0],
                    me.name, version);
 
         send_rplisupport(sptr);
@@ -1034,7 +1034,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
                     *tmpptr++ = '\0';
                 if(check_oper_can_mask(sptr, onptr, opptr, &onick) != 0)
                 {
-                  sendto_one(&me, sptr, ":%s NOTICE %s :*** Your hostname has "
+                  sendto_one(sptr, sptr, ":%s NOTICE %s :*** Your hostname has "
                                "been masked.",
                                me.name, sptr->name);
 
@@ -1080,7 +1080,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         
         if(motd != NULL)
         {
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- motd was last"
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- motd was last"
                        " changed at %s", me.name, nick, motd_last_changed_date);
         }
         
@@ -1088,38 +1088,38 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         {
             if(motd != NULL)
             {
-              sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- Please read the"
+              sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- Please read the"
                                  " motd if you haven't read it", me.name, nick);
             }
             
-          sendto_one(&me, sptr, rpl_str(RPL_MOTDSTART), me.name, parv[0], me.name);
+          sendto_one(sptr, sptr, rpl_str(RPL_MOTDSTART), me.name, parv[0], me.name);
             if((smotd = shortmotd) == NULL)
-              sendto_one(&me, sptr, rpl_str(RPL_MOTD), me.name, parv[0],
+              sendto_one(sptr, sptr, rpl_str(RPL_MOTD), me.name, parv[0],
                                     "*** This is the short motd ***");
             else 
                 while (smotd) 
                 {
-                  sendto_one(&me, sptr, rpl_str(RPL_MOTD), me.name, parv[0], 
+                  sendto_one(sptr, sptr, rpl_str(RPL_MOTD), me.name, parv[0], 
                                 smotd->line);
                     smotd = smotd->next;
                 }
         
-          sendto_one(&me, sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
+          sendto_one(sptr, sptr, rpl_str(RPL_ENDOFMOTD), me.name, parv[0]);
         }
         else
             send_motd(sptr, sptr, 1, parv);
 
         if((confopts & FLAGS_WGMON) == FLAGS_WGMON)
         {
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- This server runs an "
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- This server runs an "
                     "open proxy monitor to prevent abuse.", me.name, nick);
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- If you see"
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- If you see"
                     " connections on various ports from %s", me.name, 
                     nick, ProxyMonHost);
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- please disregard"
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- please disregard"
                     " them, as they are the monitor in action.", me.name, 
                     nick);
-          sendto_one(&me, sptr, ":%s NOTICE %s :*** Notice -- For more information"
+          sendto_one(sptr, sptr, ":%s NOTICE %s :*** Notice -- For more information"
                     " please visit %s", me.name, nick, ProxyMonURL);
         }
 
@@ -1488,7 +1488,7 @@ int check_target_limit(aClient *sptr, aClient *acptr)
 
     if(ti == max_targets)
     {
-      sendto_one(&me, sptr, err_str(ERR_TARGETTOFAST), me.name, sptr->name,
+      sendto_one(sptr, sptr, err_str(ERR_TARGETTOFAST), me.name, sptr->name,
                    acptr->name, MSG_TARGET_TIME - tmin);
         sptr->since += 2; /* penalize them 2 seconds for this! */
         sptr->num_target_errors++;
@@ -1566,7 +1566,7 @@ is_silenced(aClient *sptr, aClient *acptr)
         {
             if (!MyConnect(sptr))
             {
-              sendto_one(&me, sptr->from, ":%s SILENCE %s :%s",acptr->name,
+              sendto_one(sptr, sptr->from, ":%s SILENCE %s :%s",acptr->name,
                            sptr->name, lp->value.cp);
                 lp->flags = 1;
             }
@@ -1581,14 +1581,14 @@ static inline void
 send_msg_error(aClient *sptr, char *parv[], char *nick, int ret) 
 {
     if(ret == ERR_NOCTRLSONCHAN)
-      sendto_one(&me, sptr, err_str(ERR_NOCTRLSONCHAN), me.name,
+      sendto_one(sptr, sptr, err_str(ERR_NOCTRLSONCHAN), me.name,
                    parv[0], nick, parv[2]);
     else if(ret == ERR_NEEDREGGEDNICK)
-      sendto_one(&me, sptr, err_str(ERR_NEEDREGGEDNICK), me.name,
+      sendto_one(sptr, sptr, err_str(ERR_NEEDREGGEDNICK), me.name,
                    parv[0], nick, "speak in", aliastab[AII_NS].nick,
                    aliastab[AII_NS].server, NS_Register_URL);
     else
-      sendto_one(&me, sptr, err_str(ERR_CANNOTSENDTOCHAN), me.name,
+      sendto_one(sptr, sptr, err_str(ERR_CANNOTSENDTOCHAN), me.name,
                    parv[0], nick);
 }
 
@@ -1623,13 +1623,13 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
 
     if (parc < 2 || *parv[1] == 0)
     {
-      sendto_one(&me, sptr, err_str(ERR_NORECIPIENT), me.name, parv[0], cmd);
+      sendto_one(sptr, sptr, err_str(ERR_NORECIPIENT), me.name, parv[0], cmd);
         return -1;
     }
 
     if (parc < 3 || *parv[2] == 0)
     {
-      sendto_one(&me, sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_NOTEXTTOSEND), me.name, parv[0]);
         return -1;
     }
 
@@ -1643,7 +1643,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             ) && mycmp(parv[0], parv[1]))
         {
             if (IsWSquelch(sptr) && !notice)
-              sendto_one(&me, sptr, ":%s NOTICE %s :You are currently squelched."
+              sendto_one(sptr, sptr, ":%s NOTICE %s :You are currently squelched."
                             "  Message not sent.", me.name, parv[0]);
             return 0;
         }
@@ -1687,7 +1687,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             if (!(chptr = find_channel(s, NULL)))
             {
                 if (ismine && !notice)
-                  sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
+                  sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
                                target);
                 continue;
             }
@@ -1736,7 +1736,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
                         case CTCP_DCCSEND:
                         case CTCP_DCC:
                             if (ismine)
-                              sendto_one(&me, sptr, ":%s NOTICE %s :You may not"
+                              sendto_one(sptr, sptr, ":%s NOTICE %s :You may not"
                                            " send a DCC command to a channel"
                                            " (%s)", me.name, parv[0], target);
                             continue;
@@ -1773,7 +1773,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         if (s != target)
         {
             if (!notice)
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
                        target);
             continue;
         }
@@ -1793,7 +1793,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
                 if (!OPCanLNotice(sptr) ||
                     (mycmp(me.name, s) && !OPCanGNotice(sptr)))
                 {
-                  sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name,
+                  sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name,
                                parv[0], target);
                     continue;
                 }
@@ -1834,7 +1834,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         {
             if (!notice
             )
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
                            target);
             continue;
         }
@@ -1842,6 +1842,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         /* super targets get special treatment */
         if (IsULine(acptr))
         {
+            report_error("Checkpoint: U: check in m_message. Next checkpoint at bottom of U:check.");
             AliasInfo *ai;
 
             if (notice && (confopts & FLAGS_SERVHUB) && (acptr->uplink->serv->uflags & ULF_NONOTICE))
@@ -1852,7 +1853,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
 #ifdef DENY_SERVICES_MSGS
                 if (!s && !mycmp(ai->server, Services_Name))
                 {
-                  sendto_one(&me, sptr, err_str(ERR_MSGSERVICES), me.name,
+                  sendto_one(sptr, sptr, err_str(ERR_MSGSERVICES), me.name,
                                parv[0], ai->nick, ai->nick, ai->server,
                                ai->nick);
                     continue;
@@ -1870,13 +1871,14 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             if((svspanic>1 || (svspanic>0 && !IsARegNick(sptr))) && !IsOper(sptr))
             {
                 if(MyClient(sptr))
-                  sendto_one(&me, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
+                  sendto_one(sptr, sptr, err_str(ERR_SERVICESDOWN), me.name, parv[0],
                                acptr->name);
                 continue;
             }
 
             /* no flood/dcc/whatever checks, just send */
-            sendto_one(&me, sptr, acptr, ":%s %s %s :%s", parv[0], cmd, target,
+            report_error("Checkpoint: Message to service :%s %s %s", parv[0], cmd, target);
+            sendto_one(sptr, acptr, ":%s %s %s :%s", parv[0], cmd, target,
                        parv[2]);
             continue;
         }
@@ -1884,7 +1886,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         else if (s && ismine)
         {
             if (!notice)
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
                        target);
             continue;
         }
@@ -1908,28 +1910,28 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
             if (IsNoNonReg(acptr) && !IsRegNick(sptr) && !IsOper(sptr))
             {
                 if (ismine && !notice)
-                  sendto_one(&me, sptr, err_str(ERR_NONONREG), me.name, parv[0],
+                  sendto_one(sptr, sptr, err_str(ERR_NONONREG), me.name, parv[0],
                            target);
                 continue;
             }
             if (IsUmodeC(acptr) && !IsOper(sptr) && (!IsNoNonReg(acptr) || IsRegNick(sptr)) && acptr->user->joined && !find_shared_chan(sptr, acptr))
             {
                 if (ismine && !notice)
-                  sendto_one(&me, sptr, err_str(ERR_NOSHAREDCHAN), me.name, parv[0],
+                  sendto_one(sptr, sptr, err_str(ERR_NOSHAREDCHAN), me.name, parv[0],
                            target);
                 continue;
             }
             if (ismine && IsNoNonReg(sptr) && !IsRegNick(acptr) && !IsOper(acptr))
             {
                 if (!notice)
-                  sendto_one(&me, sptr, err_str(ERR_OWNMODE), me.name, parv[0],
+                  sendto_one(sptr, sptr, err_str(ERR_OWNMODE), me.name, parv[0],
                            acptr->name, "+R");
                 continue;
             }
             if (ismine && IsUmodeC(sptr) && !IsOper(sptr) && (!IsNoNonReg(sptr) || IsRegNick(acptr)) && sptr->user->joined && !find_shared_chan(sptr, acptr))
             {
                 if (!notice)
-                  sendto_one(&me, sptr, err_str(ERR_OWNMODE), me.name, parv[0],
+                  sendto_one(sptr, sptr, err_str(ERR_OWNMODE), me.name, parv[0],
                            acptr->name, "+C");
                 continue;
             }
@@ -1967,7 +1969,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
         }
 
         if (!notice && ismine && acptr->user->away)
-          sendto_one(&me, sptr, rpl_str(RPL_AWAY), me.name, parv[0], acptr->name,
+          sendto_one(sptr, sptr, rpl_str(RPL_AWAY), me.name, parv[0], acptr->name,
                        acptr->user->away);
 
         sendto_prefix_one(acptr, sptr, ":%s %s %s :%s", parv[0], cmd, target,
@@ -1981,7 +1983,7 @@ m_message(aClient *cptr, aClient *sptr, int parc, char *parv[], int notice)
     if (target)
     {
         if (!notice)
-          sendto_one(&me, sptr, err_str(ERR_TOOMANYTARGETS), me.name, parv[0],
+          sendto_one(sptr, sptr, err_str(ERR_TOOMANYTARGETS), me.name, parv[0],
                    target);
 
         if (sptr->user)
@@ -2040,7 +2042,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2)
     {
-      sendto_one(&me, sptr, err_str(ERR_NONICKNAMEGIVEN),
+      sendto_one(sptr, sptr, err_str(ERR_NONICKNAMEGIVEN),
                    me.name, parv[0]);
         return 0;
     }
@@ -2057,7 +2059,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
             acptr = hash_find_client(parv[2], (aClient *) NULL);
             if (!acptr || !IsPerson(acptr))
             {
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK),
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK),
                            me.name, parv[0], parv[2]);
                 return 0;
             }
@@ -2069,7 +2071,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
                     parv[1] = acptr->user->server; /* And kludge it */
                 else if(MyClient(sptr))
                 {
-                  sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, 
+                  sendto_one(sptr, sptr, err_str(ERR_NOPRIVILEGES), me.name, 
                                parv[0]);
                     return 0;
                 }
@@ -2089,7 +2091,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
         acptr = hash_find_client(nick, (aClient *) NULL);
         if (!acptr || !IsPerson(acptr))
         {
-          sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], nick);
+          sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], nick);
             continue;
         }
                 
@@ -2098,20 +2100,20 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 
         a2cptr = acptr->uplink;
                 
-      sendto_one(&me, sptr, rpl_str(RPL_WHOISUSER), me.name, parv[0], name,
+      sendto_one(sptr, sptr, rpl_str(RPL_WHOISUSER), me.name, parv[0], name,
                    user->username, user->host, acptr->info);
 #if (RIDICULOUS_PARANOIA_LEVEL>=1)
 #if (RIDICULOUS_PARANOIA_LEVEL==1)
         if(MyConnect(acptr) && user->real_oper_host && 
                 (IsAdmin(sptr) || (sptr == acptr)))
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISACTUALLY), me.name, sptr->name, 
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISACTUALLY), me.name, sptr->name, 
                        name, user->real_oper_username, user->real_oper_host, 
                        user->real_oper_ip);
 #endif
 #if (RIDICULOUS_PARANOIA_LEVEL==2)
         if(MyConnect(acptr) && user->real_oper_host && 
                 (IsAdmin(sptr) || (sptr == acptr)) && MyConnect(sptr))
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISACTUALLY), me.name, sptr->name, 
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISACTUALLY), me.name, sptr->name, 
                        name, user->real_oper_username, user->real_oper_host,
                        user->real_oper_ip);
 #endif
@@ -2125,7 +2127,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 if (len + strlen(chptr->chname) > (size_t) BUFSIZE - 4 - mlen)
                 {
-                  sendto_one(&me, sptr, ":%s %d %s %s :%s", me.name, 
+                  sendto_one(sptr, sptr, ":%s %d %s %s :%s", me.name, 
                                RPL_WHOISCHANNELS, parv[0], name, buf);
                     *buf = '\0';
                     len = 0;
@@ -2146,31 +2148,31 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
             }
         }
         if (buf[0] != '\0')
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISCHANNELS), me.name, 
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISCHANNELS), me.name, 
                        parv[0], name, buf);
         if(!(IsUmodeI(acptr) && !IsAnOper(sptr)) || (acptr == sptr))
         {       
-           sendto_one(&me, sptr, rpl_str(RPL_WHOISSERVER), me.name, parv[0], name,
+           sendto_one(sptr, sptr, rpl_str(RPL_WHOISSERVER), me.name, parv[0], name,
                      user->server, a2cptr ? a2cptr->info : "*Not On This Net*");
         }
         else /* hidden oper! */
         {       
-           sendto_one(&me, sptr, rpl_str(RPL_WHOISSERVER), me.name, parv[0], 
+           sendto_one(sptr, sptr, rpl_str(RPL_WHOISSERVER), me.name, parv[0], 
                         name, HIDDEN_SERVER_NAME, HIDDEN_SERVER_DESC);
         }
         
         if(IsAnOper(sptr) && IsSquelch(acptr))
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISTEXT), me.name, parv[0], name, 
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISTEXT), me.name, parv[0], name, 
                        IsWSquelch(acptr) ?  "User is squelched (warned)" :
                        "User is squelched (silent)");
         
         if(IsRegNick(acptr))
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISREGNICK), me.name, parv[0], name);
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISREGNICK), me.name, parv[0], name);
         if (user->away)
-          sendto_one(&me, sptr, rpl_str(RPL_AWAY), me.name, parv[0], name, 
+          sendto_one(sptr, sptr, rpl_str(RPL_AWAY), me.name, parv[0], name, 
                        user->away);
         if(IsUmodeS(acptr))
-          sendto_one(&me, sptr, rpl_str(RPL_USINGSSL), me.name, parv[0], name);
+          sendto_one(sptr, sptr, rpl_str(RPL_USINGSSL), me.name, parv[0], name);
         
         buf[0] = '\0';
         if (IsAnOper(acptr))
@@ -2182,7 +2184,7 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
         /* We don't go through the services tag list here by design, only the first services tag entry
            may change RPL_WHOISOPERATOR -Kobi_S. */
         if (buf[0] && (!acptr->user->servicestag || acptr->user->servicestag->raw!=RPL_WHOISOPERATOR))
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISOPERATOR), me.name, parv[0], 
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISOPERATOR), me.name, parv[0], 
                        name, buf);
 
         if(acptr->user->servicestag)
@@ -2190,21 +2192,21 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
             servicestag = acptr->user->servicestag;
             while(servicestag)
             {
-                if(*servicestag->tag && (!servicestag->umode || (sptr->umode & servicestag->umode))) sendto_one(&me, sptr, ":%s %d %s %s :%s", me.name, servicestag->raw, parv[0], name, servicestag->tag);
+                if(*servicestag->tag && (!servicestag->umode || (sptr->umode & servicestag->umode))) sendto_one(sptr, sptr, ":%s %d %s %s :%s", me.name, servicestag->raw, parv[0], name, servicestag->tag);
                 servicestag = servicestag->next;
             }
         }
 
 	if (MyConnect(acptr) && acptr->webirc_ip && IsAdmin(sptr))
 	{
-          sendto_one(&me, sptr, ":%s 337 %s %s :%s (%s@%s)",
+          sendto_one(sptr, sptr, ":%s 337 %s %s :%s (%s@%s)",
 		       me.name, parv[0], name,
 		       "User connected using a webirc gateway",
 		       acptr->webirc_username, acptr->webirc_ip);
 	}
 	else if (MyConnect(acptr) && acptr->webirc_ip && IsAnOper(sptr))
 	{
-          sendto_one(&me, sptr, ":%s 337 %s %s :%s (%s)",
+          sendto_one(sptr, sptr, ":%s 337 %s %s :%s (%s)",
 		       me.name, parv[0], name,
 		       "User connected using a webirc gateway",
 		       acptr->webirc_username);
@@ -2213,12 +2215,12 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
         /* don't give away that this oper is on this server if they're hidden! */
         if (acptr->user && MyConnect(acptr) && ((sptr == acptr) || 
                 !IsUmodeI(acptr) || (parc > 2) || IsAnOper(sptr)))
-          sendto_one(&me, sptr, rpl_str(RPL_WHOISIDLE), me.name, parv[0], name,
+          sendto_one(sptr, sptr, rpl_str(RPL_WHOISIDLE), me.name, parv[0], name,
                        timeofday - user->last, acptr->firsttime);
         
         continue;
     }
-  sendto_one(&me, sptr, rpl_str(RPL_ENDOFWHOIS), me.name, parv[0], parv[1]);
+  sendto_one(sptr, sptr, rpl_str(RPL_ENDOFWHOIS), me.name, parv[0], parv[1]);
     return 0;
 }
 
@@ -2245,7 +2247,7 @@ m_user(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (parc < 5 || *parv[1] == '\0' || *parv[2] == '\0' ||
         *parv[3] == '\0' || *parv[4] == '\0')
     {
-      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "USER");
+      sendto_one(sptr, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "USER");
         if (IsServer(cptr))
             sendto_realops("bad USER param count for %s from %s",
                            parv[0], get_client_name(cptr, FALSE));
@@ -2292,7 +2294,7 @@ do_user(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
     {
         if (!IsUnknown(sptr))
         {
-          sendto_one(&me, sptr, err_str(ERR_ALREADYREGISTRED),
+          sendto_one(sptr, sptr, err_str(ERR_ALREADYREGISTRED),
                        me.name, nick);
             return 0;
         }
@@ -2400,7 +2402,7 @@ do_euser(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
     {
         if (!IsUnknown(sptr))
         {
-          sendto_one(&me, sptr, err_str(ERR_ALREADYREGISTRED),
+          sendto_one(sptr, sptr, err_str(ERR_ALREADYREGISTRED),
                        me.name, nick);
             return 0;
         }
@@ -2526,7 +2528,7 @@ m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (parc < 2 || *parv[1] == '\0')
     {
-      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "KILL");
+      sendto_one(sptr, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "KILL");
         return 0;
     }
     
@@ -2535,7 +2537,7 @@ m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (!IsPrivileged(cptr))
     {
-      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
 
@@ -2558,30 +2560,30 @@ m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
              */
             if (!(acptr = get_history(nick, (long) KILLCHASETIMELIMIT)))
             {
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK),
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK),
                            me.name, parv[0], nick);
                 return 0;
             }
-          sendto_one(&me, sptr, ":%s NOTICE %s :KILL changed from %s to %s",
+          sendto_one(sptr, sptr, ":%s NOTICE %s :KILL changed from %s to %s",
                        me.name, parv[0], nick, acptr->name);
             chasing = 1;
         }
         if((!MyConnect(acptr) && MyClient(cptr) && !OPCanGKill(cptr)) ||
             (MyConnect(acptr) && MyClient(cptr) && !OPCanLKill(cptr)))
         {
-          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+          sendto_one(sptr, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             continue;
         }
         if(IsServer(acptr) || IsMe(acptr) || (MyClient(sptr) && IsULine(acptr)))
         {
-          sendto_one(&me, sptr, err_str(ERR_CANTKILLSERVER),
+          sendto_one(sptr, sptr, err_str(ERR_CANTKILLSERVER),
                        me.name, parv[0]);
             continue;
         }
         kcount++;
         if (!IsServer(sptr) && (kcount > MAXKILLS))
         {
-          sendto_one(&me, sptr,":%s NOTICE %s :Too many targets, kill list was "
+          sendto_one(sptr, sptr,":%s NOTICE %s :Too many targets, kill list was "
                        "truncated. Maximum is %d.", me.name, sptr->name,
                        MAXKILLS);
             break;
@@ -2629,7 +2631,7 @@ m_kill(aClient *cptr, aClient *sptr, int parc, char *parv[])
          */
         if (IsLocOp(sptr) && !MyConnect(acptr)) 
         {
-          sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+          sendto_one(sptr, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
             return 0;
         }
         if(IsULine(sptr))
@@ -2763,7 +2765,7 @@ m_away(aClient *cptr, aClient *sptr, int parc, char *parv[])
         }
         
         if (MyConnect(sptr))
-          sendto_one(&me, sptr, rpl_str(RPL_UNAWAY), me.name, parv[0]);
+          sendto_one(sptr, sptr, rpl_str(RPL_UNAWAY), me.name, parv[0]);
         return 0;
     }
 
@@ -2773,7 +2775,7 @@ m_away(aClient *cptr, aClient *sptr, int parc, char *parv[])
     /* only care about local non-opers */
     if (MyClient(sptr) && (sptr->acount > MAX_AWAY_COUNT) && !IsAnOper(sptr))
     {
-      sendto_one(&me, sptr, err_str(ERR_TOOMANYAWAY), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_TOOMANYAWAY), me.name, parv[0]);
         return 0;
     }
 #endif
@@ -2797,7 +2799,7 @@ m_away(aClient *cptr, aClient *sptr, int parc, char *parv[])
     sptr->user->away = away;
 
     if (MyConnect(sptr))
-      sendto_one(&me, sptr, rpl_str(RPL_NOWAWAY), me.name, parv[0]);
+      sendto_one(sptr, sptr, rpl_str(RPL_NOWAWAY), me.name, parv[0]);
     return 0;
 }
 
@@ -2815,7 +2817,7 @@ m_ping(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (parc < 2 || *parv[1] == '\0')
     {
-      sendto_one(&me, sptr, err_str(ERR_NOORIGIN), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_NOORIGIN), me.name, parv[0]);
         return 0;
     }
     origin = parv[1];
@@ -2832,13 +2834,13 @@ m_ping(aClient *cptr, aClient *sptr, int parc, char *parv[])
           sendto_one(&me, acptr, ":%s PING %s :%s", parv[0], origin, destination);
         else
         {
-          sendto_one(&me, sptr, err_str(ERR_NOSUCHSERVER), me.name, parv[0], 
+          sendto_one(sptr, sptr, err_str(ERR_NOSUCHSERVER), me.name, parv[0], 
                        destination);
             return 0;
         }
     }
     else
-      sendto_one(&me, sptr, ":%s PONG %s :%s", me.name,
+      sendto_one(sptr, sptr, ":%s PONG %s :%s", me.name,
                    (destination) ? destination : me.name, origin);
     return 0;
 }
@@ -2857,7 +2859,7 @@ m_pong(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2 || *parv[1] == '\0')
     {
-      sendto_one(&me, sptr, err_str(ERR_NOORIGIN), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_NOORIGIN), me.name, parv[0]);
         return 0;
     }
 
@@ -2876,7 +2878,7 @@ m_pong(aClient *cptr, aClient *sptr, int parc, char *parv[])
                            "sending topic burst.", me.name, sptr->name);
             send_topic_burst(sptr);
             sptr->flags |= FLAGS_PINGSENT|FLAGS_SOBSENT;
-          sendto_one(&me, sptr, "PING :%s", me.name);
+          sendto_one(sptr, sptr, "PING :%s", me.name);
         }
         else if(sptr->flags & FLAGS_TOPICBURST)
         {
@@ -2892,7 +2894,7 @@ m_pong(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                " network data.", me.name, sptr->name);
                 /* Kludge: Get the "sync" message on small networks 
                  * immediately */ 
-          sendto_one(&me, sptr, "PING :%s", me.name);
+          sendto_one(sptr, sptr, "PING :%s", me.name);
         }
     }
 
@@ -2911,7 +2913,7 @@ m_pong(aClient *cptr, aClient *sptr, int parc, char *parv[])
           sendto_one(&me, acptr, ":%s PONG %s %s", parv[0], origin, destination);
         else
         {
-          sendto_one(&me, sptr, err_str(ERR_NOSUCHSERVER), me.name, parv[0], 
+          sendto_one(sptr, sptr, err_str(ERR_NOSUCHSERVER), me.name, parv[0], 
                        destination);
             return 0;
         }
@@ -2971,7 +2973,7 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (!IsServer(cptr) && (BadPtr(name) || BadPtr(password)))
     {
-      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "OPER");
+      sendto_one(sptr, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "OPER");
         return 0;
     }
 
@@ -3001,13 +3003,13 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 #endif
         Count.oper++;
         if (IsMe(cptr))
-          sendto_one(&me, sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
+          sendto_one(sptr, sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
         return 0;
     }
     else if (IsAnOper(sptr) && MyConnect(sptr))
     {
         send_rplisupportoper(sptr);
-      sendto_one(&me, sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
+      sendto_one(sptr, sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
         return 0;
     }
 #if (RIDICULOUS_PARANOIA_LEVEL>=1)
@@ -3017,7 +3019,7 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
         if(!(aoper = find_oper(name, sptr->user->username, sptr->user->host, 
                                sptr->hostip)))
         {
-          sendto_one(&me, sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
+          sendto_one(sptr, sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
             sendto_ops_lev(ADMIN_LEV, "Failed OPER attempt by %s (%s@%s) [Unknown Account %s]",
                            parv[0], sptr->user->username, sptr->user->host, name);
             sendto_realops("Failed OPER attempt by %s [Unknown Account %s]", parv[0], name);
@@ -3032,7 +3034,7 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
                                       sptr->user->real_oper_host,
                                       sptr->user->real_oper_ip))) 
         {
-          sendto_one(&me, sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
+          sendto_one(sptr, sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
             sendto_ops_lev(ADMIN_LEV, "Failed OPER attempt by %s (%s@%s) [Unknown Account %s]",
                            parv[0], sptr->user->username, sptr->user->host, name);
             sendto_realops("Failed OPER attempt by %s [Unknown account %s]", parv[0], name);
@@ -3059,7 +3061,7 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
         if(svsnoop)
         {
-          sendto_one(&me, sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
+          sendto_one(sptr, sptr, err_str(ERR_NOOPERHOST), me.name, parv[0]);
             sendto_ops_lev(ADMIN_LEV, "Failed OPER attempt by %s (%s@%s) [svsnoop is enabled]",
                            parv[0], sptr->user->username, sptr->user->host);
             return 0;
@@ -3086,7 +3088,7 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
                    IsOper(sptr) ? 'O' : 'o');
         send_umode_out(cptr, sptr, old);
         send_rplisupportoper(sptr);
-      sendto_one(&me, sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
+      sendto_one(sptr, sptr, rpl_str(RPL_YOUREOPER), me.name, parv[0]);
         set_effective_class(sptr);
 #if defined(USE_SYSLOG) && defined(SYSLOG_OPER)
         syslog(LOG_INFO, "OPER (%s) (%s) by (%s!%s@%s)",
@@ -3129,7 +3131,7 @@ int m_oper(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
     else 
     {
-      sendto_one(&me, sptr, err_str(ERR_PASSWDMISMATCH), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_PASSWDMISMATCH), me.name, parv[0]);
 #ifdef FAILED_OPER_NOTICE
         sendto_ops_lev(ADMIN_LEV, "Failed OPER attempt by %s (%s@%s) [Bad Password for %s]",
                        parv[0], sptr->user->username, sptr->sockhost, name);
@@ -3203,7 +3205,7 @@ m_userhost(aClient *cptr, aClient *sptr, int parc, char *parv[])
                               (acptr->user->away) ? '-' : '+',
                               acptr->user->username, acptr->user->host);
         }
-  sendto_one(&me, sptr, "%s", buf);
+  sendto_one(sptr, sptr, "%s", buf);
     return 0;
 }
 
@@ -3216,7 +3218,7 @@ m_userip(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if(!IsAnOper(sptr))
     {
-      sendto_one(&me, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_NOPRIVILEGES), me.name, parv[0]);
         return 0;
     }
     ircsprintf(buf, rpl_str(RPL_USERHOST), me.name, parv[0]);
@@ -3235,7 +3237,7 @@ m_userip(aClient *cptr, aClient *sptr, int parc, char *parv[])
                               acptr->user->username,
                               IsULine(acptr) ? "0.0.0.0" : acptr->hostip);
         }
-  sendto_one(&me, sptr, "%s", buf);
+  sendto_one(sptr, sptr, "%s", buf);
     return 0;
 }
 
@@ -3259,7 +3261,7 @@ m_ison(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if (parc < 2) 
     {
-      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "ISON");
+      sendto_one(sptr, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "ISON");
         return 0;
     }
 
@@ -3282,7 +3284,7 @@ m_ison(aClient *cptr, aClient *sptr, int parc, char *parv[])
             else
                 break;
         }
-  sendto_one(&me, sptr, "%s", buf);
+  sendto_one(sptr, sptr, "%s", buf);
     return 0;
 }
 
@@ -3301,7 +3303,7 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if (parc < 2)
     {
-      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "MODE");
+      sendto_one(sptr, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0], "MODE");
         return 0;
     }
 
@@ -3311,14 +3313,14 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
     if (!(acptr = find_person(parv[1], NULL)))
     {
         if (MyConnect(sptr))
-          sendto_one(&me, sptr, err_str(ERR_NOSUCHCHANNEL), me.name, parv[0], 
+          sendto_one(sptr, sptr, err_str(ERR_NOSUCHCHANNEL), me.name, parv[0], 
                        parv[1]);
         return 0;
     }
 
     if ((sptr != acptr) || (acptr->from != sptr->from))
     {
-      sendto_one(&me, sptr, err_str(ERR_USERSDONTMATCH), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_USERSDONTMATCH), me.name, parv[0]);
         return 0;
     }
     
@@ -3333,7 +3335,7 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 *m++ = (char) (*(s + 1));
         }
         *m = '\0';
-      sendto_one(&me, sptr, rpl_str(RPL_UMODEIS), me.name, parv[0], buf);
+      sendto_one(sptr, sptr, rpl_str(RPL_UMODEIS), me.name, parv[0], buf);
         return 0;
     }
         
@@ -3402,7 +3404,7 @@ m_umode(aClient *cptr, aClient *sptr, int parc, char *parv[])
             }
     
     if (badflag)
-      sendto_one(&me, sptr, err_str(ERR_UMODEUNKNOWNFLAG), me.name, parv[0]);
+      sendto_one(sptr, sptr, err_str(ERR_UMODEUNKNOWNFLAG), me.name, parv[0]);
 
     /* stop users making themselves operators too easily */
     if (!(setflags & UMODE_o) && IsOper(sptr) && !IsServer(cptr))
@@ -3919,7 +3921,7 @@ static int add_silence(aClient *sptr,char *mask)
         {
             if ((len > MAXSILELENGTH) || (++cnt >= MAXSILES)) 
             {
-              sendto_one(&me, sptr, err_str(ERR_SILELISTFULL), me.name,
+              sendto_one(sptr, sptr, err_str(ERR_SILELISTFULL), me.name,
                            sptr->name, mask);
                 return -1;
             } 
@@ -3964,10 +3966,10 @@ m_silence(aClient *cptr,aClient *sptr,int parc,char *parv[])
                 return 0;
 
             for (lp = acptr->user->silence; lp; lp = lp->next)
-              sendto_one(&me, sptr, rpl_str(RPL_SILELIST), me.name,
+              sendto_one(sptr, sptr, rpl_str(RPL_SILELIST), me.name,
                            sptr->name, acptr->name, lp->value.cp);
 
-          sendto_one(&me, sptr, rpl_str(RPL_ENDOFSILELIST), me.name, acptr->name);
+          sendto_one(sptr, sptr, rpl_str(RPL_ENDOFSILELIST), me.name, acptr->name);
             return 0;
         }
         cp = parv[1];
@@ -3977,7 +3979,7 @@ m_silence(aClient *cptr,aClient *sptr,int parc,char *parv[])
         else if (!(strchr(cp, '@') || strchr(cp, '.') ||
                    strchr(cp, '!') || strchr(cp, '*'))) 
         {
-          sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
+          sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0],
                        parv[1]);
             return 0;
         }
@@ -3993,7 +3995,7 @@ m_silence(aClient *cptr,aClient *sptr,int parc,char *parv[])
     }
     else if (parc < 3 || *parv[2]=='\0') 
     {
-      sendto_one(&me, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
+      sendto_one(sptr, sptr, err_str(ERR_NEEDMOREPARAMS), me.name, parv[0],
                    "SILENCE");
         return -1;
     } 
@@ -4015,7 +4017,7 @@ m_silence(aClient *cptr,aClient *sptr,int parc,char *parv[])
     } 
     else
     {
-      sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
+      sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, parv[0], parv[1]);
         return 0;
     }
     return 0;
@@ -4033,7 +4035,7 @@ add_dccallow(aClient *sptr, aClient *optr)
             continue;
         if((++cnt >= MAXDCCALLOW) && !IsAnOper(sptr))
         {
-          sendto_one(&me, sptr, err_str(ERR_TOOMANYDCC), me.name, sptr->name,
+          sendto_one(sptr, sptr, err_str(ERR_TOOMANYDCC), me.name, sptr->name,
                        optr->name, MAXDCCALLOW);
             return 0;
         }
@@ -4053,7 +4055,7 @@ add_dccallow(aClient *sptr, aClient *optr)
     lp->next = optr->user->dccallow;
     optr->user->dccallow = lp;   
 
-  sendto_one(&me, sptr, rpl_str(RPL_DCCSTATUS), me.name, sptr->name, optr->name,
+  sendto_one(sptr, sptr, rpl_str(RPL_DCCSTATUS), me.name, sptr->name, optr->name,
                "added to");
     return 0;
 }
@@ -4081,7 +4083,7 @@ del_dccallow(aClient *sptr, aClient *optr, int silent)
 
     if(!found)
     {
-      sendto_one(&me, sptr, ":%s %d %s :%s is not in your DCC allow list",
+      sendto_one(sptr, sptr, ":%s %d %s :%s is not in your DCC allow list",
                    me.name, RPL_DCCINFO, sptr->name, optr->name);
         return 0;
     }
@@ -4106,7 +4108,7 @@ del_dccallow(aClient *sptr, aClient *optr, int silent)
                            "not in dccallowrem list!", optr->name, sptr->name);
 
     if(!silent)
-      sendto_one(&me, sptr, rpl_str(RPL_DCCSTATUS), me.name, sptr->name, optr->name,
+      sendto_one(sptr, sptr, rpl_str(RPL_DCCSTATUS), me.name, sptr->name, optr->name,
                    "removed from");
     
     return 0;
@@ -4148,7 +4150,7 @@ m_dccallow(aClient *cptr, aClient *sptr, int parc, char *parv[])
     
     if(parc < 2)
     {
-      sendto_one(&me, sptr, ":%s NOTICE %s :No command specified for DCCALLOW. "
+      sendto_one(sptr, sptr, ":%s NOTICE %s :No command specified for DCCALLOW. "
                    "Type /dccallow help for more information.", me.name,
                    sptr->name);
         return 0;
@@ -4170,7 +4172,7 @@ m_dccallow(aClient *cptr, aClient *sptr, int parc, char *parv[])
             
             if(!acptr)
             {
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name,
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name,
                            sptr->name, cn);
                 continue;
             }
@@ -4196,7 +4198,7 @@ m_dccallow(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
             if(!acptr)
             {
-              sendto_one(&me, sptr, err_str(ERR_NOSUCHNICK), me.name, 
+              sendto_one(sptr, sptr, err_str(ERR_NOSUCHNICK), me.name, 
                            sptr->name, cn);
                 continue;
             }
@@ -4216,19 +4218,19 @@ m_dccallow(aClient *cptr, aClient *sptr, int parc, char *parv[])
             {
                 didanything++;
                 didlist++;
-              sendto_one(&me, sptr, ":%s %d %s :The following users are on your "
+              sendto_one(sptr, sptr, ":%s %d %s :The following users are on your "
                            "dcc allow list:", me.name, RPL_DCCINFO,
                            sptr->name);
                 for(lp = sptr->user->dccallow; lp; lp = lp->next)
                 {
                     if(lp->flags == DCC_LINK_REMOTE) 
                         continue;
-                  sendto_one(&me, sptr, ":%s %d %s :%s (%s@%s)", me.name,
+                  sendto_one(sptr, sptr, ":%s %d %s :%s (%s@%s)", me.name,
                                RPL_DCCLIST, sptr->name, lp->value.cptr->name,
                                lp->value.cptr->user->username,
                                lp->value.cptr->user->host);
                 }
-              sendto_one(&me, sptr, rpl_str(RPL_ENDOFDCCLIST), me.name,
+              sendto_one(sptr, sptr, rpl_str(RPL_ENDOFDCCLIST), me.name,
                            sptr->name, s);
             }
             else if(!didhelp && myncmp(s, "help", 4) == 0)
@@ -4236,9 +4238,9 @@ m_dccallow(aClient *cptr, aClient *sptr, int parc, char *parv[])
                 didanything++;
                 didhelp++;
                 for(ptr = dcc_help; *ptr; ptr++)
-                  sendto_one(&me, sptr, ":%s %d %s :%s", me.name, RPL_DCCINFO,
+                  sendto_one(sptr, sptr, ":%s %d %s :%s", me.name, RPL_DCCINFO,
                                sptr->name, *ptr);
-              sendto_one(&me, sptr, rpl_str(RPL_ENDOFDCCLIST), me.name,
+              sendto_one(sptr, sptr, rpl_str(RPL_ENDOFDCCLIST), me.name,
                            sptr->name, s);
             }
         }
@@ -4246,7 +4248,7 @@ m_dccallow(aClient *cptr, aClient *sptr, int parc, char *parv[])
 
     if(!didanything)
     {
-      sendto_one(&me, sptr, ":%s NOTICE %s :Invalid syntax for DCCALLOW. Type "
+      sendto_one(sptr, sptr, ":%s NOTICE %s :Invalid syntax for DCCALLOW. Type "
                    "/dccallow help for more information.", me.name,
                    sptr->name);
         return 0;
