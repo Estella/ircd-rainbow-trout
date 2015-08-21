@@ -5136,6 +5136,7 @@ int m_sjoin(aClient *cptr, aClient *sptr, int parc, char *parv[])
     memset((char *) &mode, '\0', sizeof(mode));
 
     s = parv[3];
+    if (!clientjoin && !BadPtr(s))
     while (*s)
     {
         switch (*(s++))
