@@ -183,12 +183,12 @@ int do_make_cloak (aClient *sptr) {
   char *in = sptr->user->host;
   if (*in && !sptr->user->realhost[0]) strcpy(sptr->user->realhost, in);
   char *out = sptr->user->mangledhost;
-  if (!myncmp(in, sptr->hostip, strlen(sptr->hostip)))
+  if (!myncmp(in, cipntoa(sptr), strlen(cipntoa(sptr))))
     do_host_cloak_ip(in, out);
   else
     do_host_cloak_host(in, out);
   if (isatty(0)) {
-    printf("User cloaked from host %s[%s] to %s\n", in, sptr->hostip, out);
+    printf("User cloaked from host %s[%s] to %s\n", in, cipntoa(sptr), out);
     fflush(stdout);
   }
   return 0;
