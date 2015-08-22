@@ -3174,7 +3174,6 @@ m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[])
     }
     strncpyzt(cptr->passwd, password, sizeof(cptr->passwd));
     if (parv[1][0] == '/') SetOnHold(cptr); // For further (modular) processing
-    call_hooks(CHOOK_);
     if (parc > 2)
     {
         int l = strlen(parv[2]);
