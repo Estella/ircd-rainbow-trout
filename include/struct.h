@@ -247,6 +247,7 @@ typedef struct SServicesTag ServicesTag;
 #define FLAGS_ZIPPED_IN	   0x4000000  /* This link is gzipped. */
 #define FLAGS_ZIPPED_OUT   0x8000000 /* This link is gzipped. */
 #define FLAGS_SSL          0x10000000 /* client is using SSL */
+#define FLAGS_ONHOLD       0x20000000 /* client is held up by a module */
 
 /* Capabilities of the ircd or clients */
 
@@ -443,6 +444,8 @@ typedef struct SServicesTag ServicesTag;
 #define SetZipIn(x)		((x)->flags |= FLAGS_ZIPPED_IN)
 #define ZipOut(x)		((x)->flags & FLAGS_ZIPPED_OUT)
 #define SetZipOut(x)		((x)->flags |= FLAGS_ZIPPED_OUT)
+#define IsOnHold(x)		((x)->flags & FLAGS_ONHOLD)
+#define SetOnHold(x)		((x)->flags |= FLAGS_ONHOLD)
 
 #define IsSSL(x)		((x)->flags & FLAGS_SSL)
 #define SetSSL(x)		((x)->flags |= FLAGS_SSL)
@@ -909,6 +912,7 @@ struct Client
     time_t      since;      /* last time we parsed something */
     ts_val      tsinfo;     /* TS on the nick, SVINFO on servers */
     long        flags;      /* client flags */
+    long        capabs;     // module defined client capabilities
     long        umode;      /* We can illeviate overflow this way */
     aClient    *from;       /* == self, if Local Client, *NEVER* NULL! */
     aClient    *uplink;     /* this client's uplink to the network */

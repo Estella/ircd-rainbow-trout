@@ -559,6 +559,11 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
 #endif
     char        tmpstr2[512];
 
+    if (MyConnect(sptr) && IsOnHold(sptr)) {
+      sendto_one(&me, sptr, ":%s NOTICE * :You are currently on hold. Please wait while your registration is processed.", me.name);
+      sendto_one(&me, sptr, ":%s NOTICE * :You will receive a notice stating the results of your registration application shortly.", me.name);
+      return 0;
+    }
     user->last = timeofday;
     parv[0] = sptr->name;
     parv[1] = parv[2] = NULL;
@@ -1194,7 +1199,7 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
 				 sptr->user->servicestamp,
-				 cipntoa(sptr), user->realhost[0] ? user->realhost : user->host, user->mangledhost[0] ? user->host : user->host, sptr->info);
+				 cipntoa(sptr), user->realhost[0] ? user->realhost : user->host, user->mangledhost[0] ? user->mangledhost : user->host, sptr->info);
     sendto_serv_butone_nickipstr(cptr, 1, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
@@ -2391,7 +2396,7 @@ do_euser(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
     {
         strncpyzt(user->host, host, sizeof(user->host));
         sendto_realops_lev(CCONN_LEV, "Client connecting: %s (%s@%s) [%s] %s",
-                           nick, user->username, user->host, sptr->hostip,
+                           nick, user->username, realhost, mangledhost,
                            "Remote");
 
         user->server = find_or_add(server);
@@ -2472,6 +2477,8 @@ do_euser(char *nick, aClient *cptr, aClient *sptr, char *username, char *host,
 	else
 	    throttle_check(ip, -1, sptr->tsinfo);
 #endif
+        strncpyzt(user->realhost, realhost, HOSTLEN+1);
+        strncpyzt(user->mangledhost, mangledhost, HOSTLEN+1);
     }
     if(MyConnect(sptr))
         sptr->oflag=0;
@@ -3166,10 +3173,11 @@ m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[])
         return 0;
     }
     strncpyzt(cptr->passwd, password, sizeof(cptr->passwd));
+    if (parv[1][0] == '/') SetOnHold(cptr); // For further (modular) processing
+    call_hooks(CHOOK_);
     if (parc > 2)
     {
         int l = strlen(parv[2]);
-        
         if (l < 2)
             return 0;
         if (parv[2][0] == 'T' && parv[2][1] == 'S')
