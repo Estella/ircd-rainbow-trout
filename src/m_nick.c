@@ -424,6 +424,7 @@ int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		    {
 			if ((flag == UMODE_o) || (flag == UMODE_O))
 			    Count.oper++;
+
 			sptr->umode |= flag & SEND_UMODES;
 			break;
 		    }
@@ -1000,6 +1001,11 @@ int m_enick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		    {
 			if ((flag == UMODE_o) || (flag == UMODE_O))
 			    Count.oper++;
+
+                        if (flag == UMODE_CLOAK) {
+                            strcpy(sptr->user->host, sptr->user->mangledhost);
+                            hostchange_qjm(sptr, sptr->user->realhost, sptr->name, sptr->user->mangledhost); // Hopefully using a pointer for real/mangled will fix my fuck up.
+                        }
 			sptr->umode |= flag & SEND_UMODES;
 			break;
 		    }
