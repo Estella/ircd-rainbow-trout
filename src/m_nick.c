@@ -994,6 +994,12 @@ int m_enick(aClient *cptr, aClient *sptr, int parc, char *parv[])
        
 	    /* parse the usermodes -orabidoo */
 	    m = &parv[4][1];
+	    if (parc==13)
+	    {
+		int iii = do_euser(nick, cptr, sptr, parv[5], parv[6],
+			       parv[7], strtoul(parv[8], NULL, 0),
+			       parv[9], parv[12], parv[10], parv[11], NULL); // Dup of do_user that fixes this shit
+	    }
 	    while (*m)
 	    {
 		for (s = user_modes; (flag = *s); s += 2)
@@ -1010,12 +1016,7 @@ int m_enick(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		    }
 		m++;
 	    }
-	    if (parc==13)
-	    {
-		return do_euser(nick, cptr, sptr, parv[5], parv[6],
-			       parv[7], strtoul(parv[8], NULL, 0),
-			       parv[9], parv[12], parv[10], parv[11], NULL); // Dup of do_user that fixes this shit
-	    }
+            return iii;
 	}
     }
     else if (sptr->name[0])
