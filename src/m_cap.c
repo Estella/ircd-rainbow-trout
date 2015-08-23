@@ -288,7 +288,7 @@ int m_cap(aClient *cptr, aClient *sptr, int parc, char *parv[]) {
   }
   if (!strcasecmp(parv[1], "END")) {
     UnsetOnHold(cptr);
-    if (cptr->name[0]) register_user(cptr, sptr, cptr->name, cptr->username, cipntoa(cptr));
+    if (!IsRegistered(cptr) && sptr->name[0] && sptr->info[0]) register_user(cptr, sptr, cptr->name, cptr->username, cipntoa(cptr));
   }
   if (!strcasecmp(parv[1], "LS")) sendto_one(&me, cptr, "CAP LS :%s %s", "sasl", "tls");
   return 0;
