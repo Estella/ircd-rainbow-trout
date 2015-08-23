@@ -306,7 +306,7 @@ int mr_authen(aClient *cptr, aClient *sptr, int parc, char *parv[]) {
   char *uid = get_sasl_puid(cptr);
   if (!IsCapable(cptr, CAP_SASL)) return 0;
   if (strlen(parv[1]) > 400) {
-    sendto_one(&me, sptr, ":%s 905 %s :ERR_SASLTOOLONG SASL message too long");
+    sendto_one(&me, sptr, ":%s 905 %s :ERR_SASLTOOLONG SASL message too long", me.name, sptr->name[0]?sptr->name:"*");
   } else {
     if (*uid == '\0' && get_sasl_agent(cptr) == NULL) {
       uid = gen_uid();
