@@ -284,13 +284,13 @@ int m_cap(aClient *cptr, aClient *sptr, int parc, char *parv[]) {
     }
     if (IsCapable(cptr, CAP_SASL)) strncat(iscap, "sasl ", 450 - 5);
     if (IsCapable(cptr, CAP_TLS)) strncat(iscap, "tls ", 445 - 4);
-    sendto_one(&me, cptr, "CAP %s ACK :%s", sptr->name[0]?sptr->name:"*", iscap);
+    sendto_one(&me, cptr, ":%s CAP %s ACK :%s", me.name, sptr->name[0]?sptr->name:"*", iscap);
   }
   if (!strcasecmp(parv[1], "END")) {
     UnsetOnHold(cptr);
     if (!IsRegistered(cptr) && sptr->name[0] && sptr->info[0]) register_user(cptr, sptr, cptr->name, cptr->username, cipntoa(cptr));
   }
-  if (!strcasecmp(parv[1], "LS")) sendto_one(&me, cptr, "CAP %s LS :%s %s", sptr->name[0]?sptr->name:"*", "sasl", "tls");
+  if (!strcasecmp(parv[1], "LS")) sendto_one(&me, cptr, ":%s CAP %s LS :%s %s", me.name, sptr->name[0]?sptr->name:"*", "sasl", "tls");
   return 0;
 }
 
