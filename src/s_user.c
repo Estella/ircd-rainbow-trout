@@ -1195,17 +1195,22 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
     }
     hash_check_watch(sptr, RPL_LOGON);
 
-    sendto_serv_butone_nickipstr(cptr, 2, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s :%s",
+    sendto_capab_serv_butone(cptr, CAPAB_ESVID, 0, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s %s :%s",
+				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
+				 user->username, user->host, user->server,
+				 sptr->user->servicestamp,
+				 cipntoa(sptr), user->realhost[0] ? user->realhost : user->host, user->mangledhost[0] ? user->mangledhost : user->host, (sptr->account[0]) ? sptr->account : "*", sptr->info);
+    sendto_capab_serv_butone(cptr, CAPAB_ENICK, CAPAB_ESVID, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s :%s",
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
 				 sptr->user->servicestamp,
 				 cipntoa(sptr), user->realhost[0] ? user->realhost : user->host, user->mangledhost[0] ? user->mangledhost : user->host, sptr->info);
-    sendto_serv_butone_nickipstr(cptr, 1, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
+    sendto_capab_serv_butone(cptr, CAPAB_NICKIPSTR, CAPAB_ENICK|CAPAB_ESVID, "NICK %s %d %ld %s %s %s %s %lu %s :%s",
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
 				 sptr->user->servicestamp,
 				 cipntoa(sptr), sptr->info);
-    sendto_serv_butone_nickipstr(cptr, 0, "NICK %s %d %ld %s %s %s %s %lu %u :%s",
+    sendto_capab_serv_butone(cptr, 0, CAPAB_NICKIPSTR|CAPAB_ENICK|CAPAB_ESVID, "NICK %s %d %ld %s %s %s %s %lu %u :%s",
 				 nick, sptr->hopcount + 1, sptr->tsinfo, ubuf,
 				 user->username, user->host, user->server,
 				 sptr->user->servicestamp,
@@ -1217,10 +1222,10 @@ register_user(aClient *cptr, aClient *sptr, char *nick, char *username,
         /* if the I:line doesn't have a password and the user does
          * send it over to NickServ
          */
-        if (sptr->passwd[0] && aliastab[AII_NS].client && !svspanic)
+        if (sptr->passwd[0] && aliastab[AII_NS].client && !svspanic && sptr->passwd[0] != '/')
             sendto_alias(&aliastab[AII_NS], sptr, "SIDENTIFY %s",sptr->passwd);
 
-        memset(sptr->passwd, '\0', PASSWDLEN);
+        if (sptr->passwd[0] && sptr->passwd[0] != '/') memset(sptr->passwd, '\0', PASSWDLEN);
         
         if (ubuf[1]) send_umode(cptr, sptr, 0, ALL_UMODES, ubuf);
 
@@ -2217,6 +2222,8 @@ m_whois(aClient *cptr, aClient *sptr, int parc, char *parv[])
 		       acptr->webirc_username);
 	}
 
+        call_hooks(CHOOK_DOINGWHOIS, cptr, sptr, acptr, parc, parv);
+
         /* don't give away that this oper is on this server if they're hidden! */
         if (acptr->user && MyConnect(acptr) && ((sptr == acptr) || 
                 !IsUmodeI(acptr) || (parc > 2) || IsAnOper(sptr)))
@@ -3173,7 +3180,10 @@ m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[])
         return 0;
     }
     strncpyzt(cptr->passwd, password, sizeof(cptr->passwd));
-    if (parv[1][0] == '/') SetOnHold(cptr); // For further (modular) processing
+    if (parv[1][0] == '/') {
+        SetOnHold(cptr); // For further (modular) processing
+        call_hooks(CHOOK_HELD, cptr);
+    }
     if (parc > 2)
     {
         int l = strlen(parv[2]);

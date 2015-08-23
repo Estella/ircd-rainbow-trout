@@ -492,6 +492,8 @@ static DLink *sendburst_hooks = NULL;
 static DLink *throttle_hooks = NULL;
 static DLink *forbid_hooks = NULL;
 static DLink *signoff_hooks = NULL;
+static DLink *doingwhois_hooks = NULL;
+static DLink *held_hooks = NULL;
 static DLink *mload_hooks = NULL;
 static DLink *munload_hooks = NULL;
 
@@ -548,6 +550,12 @@ get_texthooktype(enum c_hooktype hooktype)
 
         case CHOOK_SIGNOFF:
             return "Signoff";
+
+        case CHOOK_DOINGWHOIS:
+            return "Whois hook";
+
+        case CHOOK_HELD:
+            return "User on hold hook";
 
         case MHOOK_LOAD:
             return "Module load";
@@ -626,6 +634,14 @@ get_hooklist(enum c_hooktype hooktype)
 
         case CHOOK_SIGNOFF:
             hooklist = &signoff_hooks;
+            break;
+
+        case CHOOK_DOINGWHOIS:
+            hooklist = &doingwhois_hooks;
+            break;
+
+        case CHOOK_HELD:
+            hooklist = &held_hooks;
             break;
 
         case MHOOK_LOAD:
@@ -946,6 +962,34 @@ call_hooks(enum c_hooktype hooktype, ...)
                     void (*rfunc) (aClient *) = 
                                     ((aHook *)lp->value.cp)->funcptr;
                     (*rfunc)(acptr);
+                }
+                break;
+            }
+
+        case CHOOK_HELD:
+            {
+                aClient *acptr = va_arg(vl, aClient *);
+                for(lp = held_hooks; lp; lp = lp->next)
+                {
+                    void (*rfunc) (aClient *) = 
+                                    ((aHook *)lp->value.cp)->funcptr;
+                    (*rfunc)(acptr);
+                }
+                break;
+            }
+
+        case CHOOK_DOINGWHOIS:
+            {
+                aClient *acptr = va_arg(vl, aClient *);
+                aClient *cptr = va_arg(vl, aClient *);
+                aClient *tptr = va_arg(vl, aClient *);
+                int parc = va_arg(vl, int);
+                char **parv = va_arg(vl, char **);
+                for(lp = doingwhois_hooks; lp; lp = lp->next)
+                {
+                    void (*rfunc) (aClient *, aClient *, aClient *, int, char **) = 
+                                    ((aHook *)lp->value.cp)->funcptr;
+                    (*rfunc)(acptr, cptr, tptr, parc, parv);
                 }
                 break;
             }

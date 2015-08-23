@@ -51,7 +51,14 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
             ubuf[0] = '+';
             ubuf[1] = '\0';
         }
-	if (IsENick(cptr))
+//	if (IsESVID(cptr))
+//        {
+         sendto_one(&me, cptr, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s %s :%s",
+		   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
+		   acptr->user->username, acptr->user->host,
+		   acptr->user->server, acptr->user->servicestamp,
+		   cipntoa(acptr), acptr->user->realhost[0] ? acptr->user->realhost : acptr->user->host, acptr->user->mangledhost[0] ? acptr->user->mangledhost : "*", acptr->account[0] ? acptr->account : "*", acptr->info);
+/*	} else if (IsENick(cptr))
         {
 	  sendto_one(&me, cptr, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s :%s",
 			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
@@ -74,7 +81,7 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
 			   acptr->user->server, acptr->user->servicestamp,
 			   (acptr->ip_family == AF_INET) ?
 			   htonl(acptr->ip.ip4.s_addr) : 1, acptr->info);
-	}
+	}*/
         for(servicestag = acptr->user->servicestag; servicestag; servicestag = servicestag->next)
         {
             ubuf[0] = '+';
@@ -418,12 +425,12 @@ m_server_estab(aClient *cptr)
 #ifdef HAVE_ENCRYPTION_ON
         if(!WantDKEY(cptr))
           sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP "
-                       "NICKIP NICKIPSTR ENICK TSMODE");
+                       "NICKIP NICKIPSTR ENICK TSMODE ESVID");
         else
           sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT DKEY "
-                       "ZIP NICKIP NICKIPSTR ENICK TSMODE");
+                       "ZIP NICKIP NICKIPSTR ENICK TSMODE ESVID");
 #else
-      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE ENICK");
+      sendto_one(&me, cptr, "CAPAB SSJOIN NOQUIT BURST UNCONNECT ZIP NICKIP NICKIPSTR TSMODE ENICK ESVID");
 #endif
 
       sendto_one(&me, cptr, "SERVER %s 1 :%s",

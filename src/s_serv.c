@@ -2399,6 +2399,8 @@ m_capab(aClient *cptr, aClient *sptr, int parc, char *parv[])
 	    SetNickIPStr(cptr);
 	else if (strcmp(parv[i], "ENICK") == 0)
 	    SetENick(cptr);
+	else if (strcmp(parv[i], "ESVID") == 0)
+	    SetESVID(cptr);
     }
 
     return 0;

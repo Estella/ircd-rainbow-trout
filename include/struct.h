@@ -262,6 +262,7 @@ typedef struct SServicesTag ServicesTag;
 #endif
 #define CAPAB_NICKIPSTR 0x0080 /* Nick IP as a string support */
 #define CAPAB_ENICK 0x0100 /* ENICK, like Charybdis EUID but for TS5 */
+#define CAPAB_ESVID 0x0200 /* ENICK2, even more like Charybdis EUID but again for TS5 */
 
 
 #define SetDKEY(x)	((x)->capabilities |= CAPAB_DKEY)
@@ -291,6 +292,9 @@ typedef struct SServicesTag ServicesTag;
 
 #define SetENick(x)	((x)->capabilities |= CAPAB_ENICK)
 #define IsENick(x)	((x)->capabilities & CAPAB_ENICK)
+
+#define SetESVID(x)	((x)->capabilities |= CAPAB_ESVID)
+#define IsESVID(x)	((x)->capabilities & CAPAB_ESVID)
 
 /* flag macros. */
 #define IsULine(x) ((x)->flags & FLAGS_ULINE)
@@ -446,6 +450,7 @@ typedef struct SServicesTag ServicesTag;
 #define SetZipOut(x)		((x)->flags |= FLAGS_ZIPPED_OUT)
 #define IsOnHold(x)		((x)->flags & FLAGS_ONHOLD)
 #define SetOnHold(x)		((x)->flags |= FLAGS_ONHOLD)
+#define UnsetOnHold(x)		((x)->flags &= ~(FLAGS_ONHOLD))
 
 #define IsSSL(x)		((x)->flags & FLAGS_SSL)
 #define SetSSL(x)		((x)->flags |= FLAGS_SSL)
@@ -859,7 +864,6 @@ struct User
     char       *server;        /* pointer to scached server name */
     unsigned int servicetype;  /* set by SVSMODE +T */
     unsigned long servicestamp; /* set by SVSMODE +d */
-    char       *account;	/* set by ACCOUNT (coded up based on an idea ported from ircu) */
     ServicesTag *servicestag;  /* set by SVSTAG */
     AliasInfo  *alias;         /* shortform alias data for U:lined clients */
     /*
@@ -922,6 +926,7 @@ struct Client
     char        nicksent;
     char        name[HOSTLEN + 1];  /* Unique name of the client, nick or
 				     * host */
+    char        account[NICKLEN + 1];	/* set by ACCOUNT (coded up based on an idea ported from ircu) */
     char        info[REALLEN + 1];  /* Free form additional client 
 				     * information */
     int (*cb)CCB; // Callback function, must be NULL for normal clients and remote pseudos.

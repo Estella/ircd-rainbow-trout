@@ -10,6 +10,12 @@ enum c_hooktype {
                        * Params: None
                        * Returns void 
                        */
+   CHOOK_HELD,        /* Called when client is held (requested modular password checking, or something)
+                       * are done, acptr->ip is valid, 
+                       * acptr->hostip is not "*"
+                       * Params: 1: (aClient *) 
+                       * Returns int
+                       */
    CHOOK_PREACCESS,   /* Called before any access checks (dns, ident) 
                        * are done, acptr->ip is valid, 
                        * acptr->hostip is not "*"
@@ -69,6 +75,7 @@ enum c_hooktype {
                        * Returns void */
    CHOOK_CHECKCANSPEAK,    // Used to implement extbans. Takes two parameters, (aClient *, aChannel *channel, char *text) returns int
    CHOOK_CHECKCANJOIN,    // Used to implement extbans. Takes two parameters, (aClient *, aChannel *channel) returns int
+   CHOOK_DOINGWHOIS,     // After standard WHOIS lines, before EOW; takes four parameters (aClient *, aClient *, int parc, char **parv) same as WHOIS
    MHOOK_LOAD,        /* Called for modules loading and unloading */
    MHOOK_UNLOAD       /* Params: 2: (char *modulename, void *moduleopaque) */
 };
