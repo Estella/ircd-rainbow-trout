@@ -51,14 +51,14 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
             ubuf[0] = '+';
             ubuf[1] = '\0';
         }
-//	if (IsESVID(cptr))
-//        {
+	if (IsESVID(cptr))
+        {
          sendto_one(&me, cptr, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s %s :%s",
 		   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
 		   acptr->user->username, acptr->user->host,
 		   acptr->user->server, acptr->user->servicestamp,
 		   cipntoa(acptr), acptr->user->realhost[0] ? acptr->user->realhost : acptr->user->host, acptr->user->mangledhost[0] ? acptr->user->mangledhost : "*", acptr->account[0] ? acptr->account : "*", acptr->info);
-/*	} else if (IsENick(cptr))
+	} else if (IsENick(cptr))
         {
 	  sendto_one(&me, cptr, "ENICK %s %d %ld %s %s %s %s %lu %s %s %s :%s",
 			   acptr->name, acptr->hopcount + 1, acptr->tsinfo, ubuf,
@@ -81,7 +81,7 @@ static void sendnick_TS(aClient *cptr, aClient *acptr)
 			   acptr->user->server, acptr->user->servicestamp,
 			   (acptr->ip_family == AF_INET) ?
 			   htonl(acptr->ip.ip4.s_addr) : 1, acptr->info);
-	}*/
+	}
         for(servicestag = acptr->user->servicestag; servicestag; servicestag = servicestag->next)
         {
             ubuf[0] = '+';
@@ -349,7 +349,7 @@ do_server_estab(aClient *cptr)
        the other side has finished processing it. */
     cptr->flags |= FLAGS_BURST|FLAGS_PINGSENT;
     if (IsBurst(cptr)) cptr->flags |= FLAGS_SOBSENT;
-  sendto_one(&me, cptr, "PING :%s", me.name);
+    sendto_one(&me, cptr, "PING :%s", me.name);
 
     return 0;
 }
@@ -418,7 +418,7 @@ m_server_estab(aClient *cptr)
     if (IsUnknown(cptr))
     {
         if (aconn->cpasswd[0])
-          sendto_one(&me, cptr, "PASS %s :TS", aconn->cpasswd);
+          sendto_one(&me, cptr, "PASS %s TS IXN", aconn->cpasswd);
 
         /* Pass my info to the new server */
 

@@ -3192,6 +3192,23 @@ m_pass(aClient *cptr, aClient *sptr, int parc, char *parv[])
         if (parv[2][0] == 'T' && parv[2][1] == 'S')
             cptr->tsinfo = (ts_val) TS_DOESTS;
     }
+    if (parc > 3)
+    {
+        int i = 0;
+        for (i = 0; parv[3][i]; i++) {
+            switch (parv[3][i]) {
+                case 'I':
+                  SetESVID(cptr);
+                  break;
+                case 'X':
+                  SetENick(cptr);
+                  break;
+                case 'N':
+                  SetNickIPStr(cptr);
+                  break;
+            }
+        }
+    }
     return 0;
 }
 
