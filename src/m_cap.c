@@ -308,7 +308,7 @@ int mr_authen(aClient *cptr, aClient *sptr, int parc, char *parv[]) {
   if (strlen(parv[1]) > 400) {
     sendto_one(&me, sptr, ":%s 905 %s :ERR_SASLTOOLONG SASL message too long", me.name, sptr->name[0]?sptr->name:"*");
   } else {
-    if (*uid == '\0' && get_sasl_agent(cptr) == NULL) {
+    if (uid == NULL && get_sasl_agent(cptr) == NULL) {
       uid = gen_uid();
       sendto_capab_serv_butone(&me, CAPAB_ESVID, 0, ":%s AUTHEN %s %s %s S %s", me.name, me.name, "*", uid, parv[1]);
       add_sasl_user(cptr, uid);
@@ -388,7 +388,7 @@ int m_authen(aClient *cptr, aClient *sptr, int parc, char *parv[]) {
 
 int cap_doing_whois(aClient *cptr, aClient *sptr, aClient *tptr, int parc, char *parv[]) {
   if (tptr->account[0] == '\0') return 0;
-  sendto_one(sptr, sptr, ":%s 330 %s %s %s :ACCOUNT", me.name, parv[0], tptr->name, tptr->account);
+  sendto_one(sptr, sptr, ":%s 330 %s %s %s :logged in as", me.name, parv[0], tptr->name, tptr->account);
   return 0;
 }
 
