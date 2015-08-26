@@ -3566,7 +3566,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
             add_user_to_channel(chptr, sptr, 0);
         joinrate_dojoin(chptr, sptr);
         /* Set timestamp if appropriate, and propagate */
-        if (MyClient(sptr) && flags == CHFL_CHANOP) 
+        if (MyClient(sptr) && flags == CHFL_CHANOP|CHFL_SUPEROP) 
         {
             chptr->channelts = timeofday;
             
@@ -3574,7 +3574,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
                so we can bounce modes and stuff if our ts is older. */
             
             if (allow_op)
-                sendto_serv_butone(cptr, ":%s SJOIN %ld %s + :@%s", me.name,
+                sendto_serv_butone(cptr, ":%s SJOIN %ld %s + :!@%s", me.name,
                                    chptr->channelts, name, parv[0]);
             else
                 sendto_serv_butone(cptr, ":%s SJOIN %ld %s + :%s", me.name,
