@@ -2514,8 +2514,8 @@ m_akill(aClient *cptr, aClient *sptr, int parc, char *parv[])
     current_date=smalldate((time_t)timeset);
     /* cut reason down a little, eh? */
     /* 250 chars max */
-    if(strlen(reason)>250)
-        reason[251]=0;
+    if(strlen(reason)>350)
+        reason[351]=0;
 
     ban = make_hostbased_ban(user, host);
     if(!ban)

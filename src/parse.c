@@ -98,6 +98,7 @@ void init_functab(void) {
     msgstruct(MSG_AWAY,      &m_away,      MAXPARA,  0,         0);
     msgstruct(MSG_ISON,      &m_ison,            1,  0,         0);
     msgstruct(MSG_SERVER,    &m_server,    MAXPARA,  MF_UNREG,  0);
+    //msgstruct("ESERVER",     &m_eserver,   MAXPARA,  MF_UNREG,  0);
     msgstruct(MSG_SQUIT,     &m_squit,     MAXPARA,  0,         0);
     msgstruct(MSG_WHOIS,     &m_whois,     MAXPARA,  0,         0);
     msgstruct(MSG_WHO,       &m_who,       MAXPARA,  0,         0);
