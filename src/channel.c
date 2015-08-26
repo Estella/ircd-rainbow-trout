@@ -3566,7 +3566,7 @@ int m_join(aClient *cptr, aClient *sptr, int parc, char *parv[])
             add_user_to_channel(chptr, sptr, 0);
         joinrate_dojoin(chptr, sptr);
         /* Set timestamp if appropriate, and propagate */
-        if (MyClient(sptr) && flags == CHFL_CHANOP|CHFL_SUPEROP) 
+        if (MyClient(sptr) && flags == (CHFL_CHANOP|CHFL_SUPEROP))
         {
             chptr->channelts = timeofday;
             
